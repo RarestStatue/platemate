@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  userRole     String   @default("user") @map("user_role")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  profile             UserProfile?
+  dietaryRestrictions UserDietaryRestriction?
+  recipes             Recipe[]
+  ratings             RecipeRating[]
+  reviews             RecipeReview[]
+  comments            RecipeComment[]
+  saves               UserRecipeSave[]
+  pantry              UserPantry[]
+  shoppingList        ShoppingListItem[]
+  following           UserFollow[] @relation("follower")
+  followers           UserFollow[] @relation("following")
+
+  @@map("users")
+}
+
+model UserProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique @map("user_id")
+  bio         String?
+  avatarUrl   String?  @map("avatar_url")
+  isPublic    Boolean  @default(true) @map("is_public")
+  recipeCount Int      @default(0) @map("recipe_count")
+  reviewCount Int      @default(0) @map("review_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserDietaryRestriction {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique @map("user_id")
+  vegetarian  Boolean  @default(false)
+  vegan       Boolean  @default(false)
+  glutenFree  Boolean  @default(false) @map("gluten_free")
+  halal       Boolean  @default(false)
+  peanutFree  Boolean  @default(false) @map("peanut_free")
+  dairyFree   Boolean  @default(false) @map("dairy_free")
+  allergies   String[] @default([])
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_dietary_restrictions")
+}
+
+model Recipe {
+  id               Int      @id @default(autoincrement())
+  creatorId        Int      @map("creator_id")
+  title            String
+  description      String?
+  prepTimeMin      Int      @map("prep_time_min")
+  servings         Int      @default(1)
+  photoUrl         String?  @map("photo_url")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  avgRating        Float    @default(0) @map("avg_rating")
+  reviewCount      Int      @default(0) @map("review_count")
+  ratingCount      Int      @default(0) @map("rating_count")
+  commentCount     Int      @default(0) @map("comment_count")
+  saveCount        Int      @default(0) @map("save_count")
+  lastEngagementAt DateTime @default(now()) @map("last_engagement_at")
+
+  hasPeanuts    Boolean @default(false) @map("has_peanuts")
+  hasTreeNuts   Boolean @default(false) @map("has_tree_nuts")
+  hasShellfish  Boolean @default(false) @map("has_shellfish")
+  hasDairy      Boolean @default(false) @map("has_dairy")
+  hasGluten     Boolean @default(false) @map("has_gluten")
+  hasEggs       Boolean @default(false) @map("has_eggs")
+
+  creator      User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  ingredients  RecipeIngredient[]
+  steps        RecipeStep[]
+  ratings      RecipeRating[]
+  reviews      RecipeReview[]
+  comments     RecipeComment[]
+  saves        UserRecipeSave[]
+  shoppingItems ShoppingListItem[]
+  duplicateOriginals RecipeDuplicateFlag[] @relation("original")
+  duplicateCandidates RecipeDuplicateFlag[] @relation("candidate")
+
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id         Int      @id @default(autoincrement())
+  recipeId   Int      @map("recipe_id")
+  ingredient String
+  quantity   Float
+  unit       String
+  notes      String?
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@map("recipe_ingredients")
+}
+
+model RecipeStep {
+  id          Int      @id @default(autoincrement())
+  recipeId    Int      @map("recipe_id")
+  stepNumber  Int      @map("step_number")
+  instruction String
+  durationMin Int?     @map("duration_min")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@map("recipe_steps")
+}
+
+model IngredientSubstitution {
+  id           Int      @id @default(autoincrement())
+  ingredient   String
+  substitute   String
+  flavorImpact String   @map("flavor_impact")
+  vegetarian   Boolean  @default(false)
+  vegan        Boolean  @default(false)
+  glutenFree   Boolean  @default(false) @map("gluten_free")
+  dairyFree    Boolean  @default(false) @map("dairy_free")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("ingredient_substitutions")
+}
+
+model UserPantry {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  ingredient  String
+  quantity    Float
+  unit        String
+  lastUpdated DateTime @default(now()) @map("last_updated")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ingredient])
+  @@map("user_pantry")
+}
+
+model RecipeRating {
+  id        Int      @id @default(autoincrement())
+  recipeId  Int      @map("recipe_id")
+  userId    Int      @map("user_id")
+  rating    Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, userId])
+  @@map("recipe_ratings")
+}
+
+model RecipeReview {
+  id        Int      @id @default(autoincrement())
+  recipeId  Int      @map("recipe_id")
+  userId    Int      @map("user_id")
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, userId])
+  @@map("recipe_reviews")
+}
+
+model RecipeComment {
+  id              Int      @id @default(autoincrement())
+  recipeId        Int      @map("recipe_id")
+  userId          Int      @map("user_id")
+  text            String
+  parentCommentId Int?     @map("parent_comment_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  recipe  Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  RecipeComment? @relation("commentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies RecipeComment[] @relation("commentThread")
+
+  @@map("recipe_comments")
+}
+
+model UserRecipeSave {
+  id       Int      @id @default(autoincrement())
+  userId   Int      @map("user_id")
+  recipeId Int      @map("recipe_id")
+  savedAt  DateTime @default(now()) @map("saved_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
+  @@map("user_recipe_saves")
+}
+
+model UserFollow {
+  id          Int      @id @default(autoincrement())
+  followerId  Int      @map("follower_id")
+  followingId Int      @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("user_follows")
+}
+
+model ShoppingListItem {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  item         String
+  fromRecipeId Int?     @map("from_recipe_id")
+  isChecked    Boolean  @default(false) @map("is_checked")
+  createdAt    DateTime @default(now()) @map("created_at")
+  checkedAt    DateTime? @map("checked_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe? @relation(fields: [fromRecipeId], references: [id], onDelete: SetNull)
+
+  @@map("shopping_list_items")
+}
+
+model RecipeDuplicateFlag {
+  id                 Int      @id @default(autoincrement())
+  originalRecipeId   Int      @map("original_recipe_id")
+  candidateRecipeId  Int      @map("candidate_recipe_id")
+  similarityScore    Float    @map("similarity_score")
+  flaggedReason      String   @map("flagged_reason")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  original  Recipe @relation("original", fields: [originalRecipeId], references: [id], onDelete: Cascade)
+  candidate Recipe @relation("candidate", fields: [candidateRecipeId], references: [id], onDelete: Cascade)
+
+  @@map("recipe_duplicate_flags")
+}

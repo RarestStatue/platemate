@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Platemate — UI Component Library</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    /* ============================================================
+       TOKENS
+    ============================================================ */
+    :root {
+      --red:         #E24B4A;
+      --red-light:   #FCEBEB;
+      --red-mid:     #F09595;
+      --red-border:  #F7C1C1;
+      --red-dark:    #791F1F;
+      --red-darker:  #A32D2D;
+      --warn-bg:     #FAEEDA;
+      --warn-text:   #633806;
+      --safe-bg:     #e8f5e9;
+      --safe-text:   #2a7a2a;
+      --white:       #ffffff;
+      --text-dark:   #222222;
+      --text-mid:    #444444;
+      --text-light:  #888888;
+      --text-xlight: #aaaaaa;
+      --font:        system-ui, -apple-system, sans-serif;
+    }
+
+    /* ============================================================
+       PAGE LAYOUT
+    ============================================================ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: #f5f5f5;
+      color: var(--text-dark);
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+
+    .page-sub {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-bottom: 2.5rem;
+    }
+
+    .section {
+      margin-bottom: 3rem;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-light);
+      margin-bottom: 1rem;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .component-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .component-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .component-label {
+      font-size: 10px;
+      color: var(--text-light);
+      font-family: monospace;
+      background: #eee;
+      padding: 2px 6px;
+      border-radius: 3px;
+      width: fit-content;
+    }
+
+    /* ============================================================
+       PHONE FRAME
+    ============================================================ */
+    .phone {
+      width: 155px;
+      height: 310px;
+      background: var(--white);
+      border: 2px solid var(--red);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       TOP BAR
+    ============================================================ */
+    .topbar {
+      height: 24px;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .topbar span {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--white);
+      font-family: var(--font);
+    }
+
+    /* ============================================================
+       PHONE BODY
+    ============================================================ */
+    .bod {
+      padding: 10px 9px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       BOTTOM NAV BAR
+    ============================================================ */
+    .nav {
+      display: flex;
+      border-top: 1px solid var(--red-mid);
+      flex-shrink: 0;
+      height: 34px;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      font-size: 7px;
+      color: var(--red-darker);
+      font-family: var(--font);
+      cursor: pointer;
+    }
+
+    .nav-item i {
+      font-size: 11px;
+    }
+
+    .nav-item.active {
+      color: var(--red);
+    }
+
+    /* ============================================================
+       INPUT FIELD
+    ============================================================ */
+    .field {
+      border: 1px solid var(--red-mid);
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-size: 10px;
+      color: var(--text-mid);
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--white);
+    }
+
+    .field i {
+      font-size: 11px;
+      color: var(--red-mid);
+    }
+
+    /* Active / focused field */
+    .field.active {
+      border-color: var(--red);
+      background: var(--red-light);
+    }
+
+    .field.active span {
+      color: var(--red-darker);
+    }
+
+    /* ============================================================
+       BUTTONS
+    ============================================================ */
+    .btn-primary {
+      background: var(--red);
+      border-radius: 5px;
+      padding: 7px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--white);
+      font-family: var(--font);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .btn-outline {
+      border: 1px solid var(--red);
+      border-radius: 5px;
+      padding: 7px;
+      text-align: center;
+      font-size: 10px;
+      color: var(--red);
+      font-family: var(--font);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    /* ============================================================
+       DIVIDER
+    ============================================================ */
+    .divider {
+      height: 1px;
+      background: var(--red-border);
+      flex-shrink: 0;
+    }
+
+    /* OR divider row */
+    .divider-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .divider-row .line {
+      flex: 1;
+      height: 1px;
+      background: var(--red-border);
+    }
+
+    .divider-row .or-text {
+      font-size: 9px;
+      color: var(--text-xlight);
+      font-family: var(--font);
+    }
+
+    /* ============================================================
+       SECTION HEADER
+    ============================================================ */
+    .sec-header {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-dark);
+      font-family: var(--font);
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       LABEL (above input)
+    ============================================================ */
+    .field-label {
+      font-size: 9px;
+      color: var(--text-light);
+      font-family: var(--font);
+    }
+
+    /* ============================================================
+       SMALL LINK TEXT
+    ============================================================ */
+    .link-text {
+      font-size: 9px;
+      color: var(--red);
+      font-family: var(--font);
+      text-align: right;
+      cursor: pointer;
+    }
+
+    /* ============================================================
+       RECIPE CARD
+    ============================================================ */
+    .recipe-card {
+      border: 1px solid var(--red-border);
+      border-radius: 5px;
+      padding: 5px 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .recipe-card-left {
+      font-size: 10px;
+      color: var(--text-dark);
+      font-family: var(--font);
+      line-height: 1.3;
+    }
+
+    .recipe-card-left small {
+      font-size: 8px;
+      color: var(--text-light);
+      display: block;
+    }
+
+    /* ============================================================
+       BADGES
+    ============================================================ */
+    /* Missing ingredients — 0 missing (good) */
+    .badge-ok {
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--red-light);
+      color: var(--red-dark);
+      white-space: nowrap;
+      font-family: var(--font);
+    }
+
+    /* Missing ingredients — X missing (warning) */
+    .badge-warn {
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      white-space: nowrap;
+      font-family: var(--font);
+    }
+
+    /* Safe (dietary filter) */
+    .badge-safe {
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--safe-bg);
+      color: var(--safe-text);
+      white-space: nowrap;
+      font-family: var(--font);
+    }
+
+    /* Popular */
+    .badge-pop {
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--red-light);
+      color: var(--red-dark);
+      white-space: nowrap;
+      font-family: var(--font);
+    }
+
+    /* ============================================================
+       TAG PILLS (filters / ingredients)
+    ============================================================ */
+    .tag {
+      display: inline-block;
+      font-size: 8px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: var(--red-light);
+      color: var(--red-dark);
+      font-family: var(--font);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .tag.active {
+      background: var(--red);
+      color: var(--white);
+    }
+
+    /* Dashed add tag */
+    .tag-add {
+      display: inline-block;
+      font-size: 8px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px dashed var(--red);
+      color: var(--red);
+      font-family: var(--font);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-items: center;
+    }
+
+    /* ============================================================
+       REVIEW BOX
+    ============================================================ */
+    .review-box {
+      border: 1px solid var(--red-border);
+      border-radius: 5px;
+      padding: 5px 6px;
+      flex-shrink: 0;
+    }
+
+    .review-box-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      line-height: 1;
+    }
+
+    .review-name {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--text-dark);
+      font-family: var(--font);
+      line-height: 1;
+    }
+
+    .review-text {
+      font-size: 8px;
+      color: #666;
+      font-family: var(--font);
+      line-height: 1.3;
+      margin-top: 3px;
+    }
+
+    .review-actions {
+      font-size: 8px;
+      font-family: var(--font);
+      margin-top: 3px;
+    }
+
+    .review-actions a {
+      color: var(--red);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* Tiered badge (Top reviewer etc.) */
+    .badge-tier {
+      font-size: 7px;
+      padding: 1px 3px;
+      border-radius: 3px;
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      font-family: var(--font);
+      white-space: nowrap;
+      line-height: 1.4;
+    }
+
+    /* ============================================================
+       STARS
+    ============================================================ */
+    /* Small — used inside review boxes and rating lines */
+    .stars-sm {
+      font-size: 9px;
+      color: var(--red);
+      font-family: var(--font);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .stars-sm .off {
+      color: #ddd;
+    }
+
+    /* Large — used on write review screen for interactive selector */
+    .stars-lg {
+      font-size: 18px;
+      color: var(--red);
+      font-family: var(--font);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .stars-lg .off {
+      color: #ddd;
+    }
+
+    .rating-line {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      line-height: 1;
+    }
+
+    .rating-count {
+      font-size: 8px;
+      color: var(--text-light);
+      font-family: var(--font);
+    }
+
+    /* ============================================================
+       SERVING SIZE SCALER
+    ============================================================ */
+    .scaler {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--red);
+      border-radius: 5px;
+      padding: 4px 8px;
+      flex-shrink: 0;
+    }
+
+    .scaler-label {
+      font-size: 9px;
+      color: var(--text-mid);
+      font-family: var(--font);
+    }
+
+    .scaler-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scaler-btn {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--white);
+      font-family: var(--font);
+      line-height: 1;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .scaler-value {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dark);
+      font-family: var(--font);
+      min-width: 14px;
+      text-align: center;
+    }
+
+    .scaler-value.updated {
+      color: var(--red);
+    }
+
+    /* ============================================================
+       INGREDIENT LINES (recipe detail)
+    ============================================================ */
+    .ing-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .ing-name {
+      font-size: 9px;
+      color: var(--text-mid);
+      font-family: var(--font);
+    }
+
+    .ing-qty {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--text-dark);
+      font-family: var(--font);
+    }
+
+    .ing-qty.updated {
+      color: var(--red);
+    }
+
+    /* Have / missing ingredient lines */
+    .ing-have {
+      font-size: 9px;
+      color: var(--safe-text);
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+    }
+
+    .ing-missing {
+      font-size: 9px;
+      color: var(--red-darker);
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+    }
+
+    /* ============================================================
+       IMAGE PLACEHOLDER
+    ============================================================ */
+    .img-placeholder {
+      background: var(--red-light);
+      border-radius: 5px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: var(--red-darker);
+      font-family: var(--font);
+      flex-shrink: 0;
+    }
+
+    /* Dashed (upload) */
+    .img-placeholder.dashed {
+      border: 1px dashed var(--red);
+      height: 44px;
+    }
+
+    /* ============================================================
+       TEXTAREA MOCK
+    ============================================================ */
+    .textarea-mock {
+      border: 1px solid var(--red-mid);
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-size: 9px;
+      color: var(--text-mid);
+      font-family: var(--font);
+      min-height: 34px;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       BANNER (info / warning / safe)
+    ============================================================ */
+    .banner-warn {
+      background: var(--warn-bg);
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-size: 8px;
+      color: var(--warn-text);
+      font-family: var(--font);
+    }
+
+    .banner-info {
+      background: var(--red-light);
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: 8px;
+      color: var(--red-dark);
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ============================================================
+       STEP (recipe guide)
+    ============================================================ */
+    .step {
+      display: flex;
+      gap: 5px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      color: var(--white);
+      font-family: var(--font);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-text {
+      font-size: 9px;
+      color: var(--text-mid);
+      font-family: var(--font);
+      line-height: 1.4;
+    }
+
+    /* ============================================================
+       LOGO (login screen)
+    ============================================================ */
+    .logo-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding-top: 4px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-dark);
+      font-family: var(--font);
+    }
+
+    .logo-sub {
+      font-size: 9px;
+      color: var(--text-light);
+      font-family: var(--font);
+    }
+
+    /* ============================================================
+       UTILITY
+    ============================================================ */
+    .update-note {
+      font-size: 8px;
+      color: var(--red);
+      font-family: var(--font);
+      text-align: center;
+    }
+
+    .note-text {
+      font-size: 8px;
+      color: var(--text-xlight);
+      font-family: var(--font);
+      text-align: center;
+    }
+
+    .two-col {
+      display: flex;
+      gap: 5px;
+    }
+
+    .two-col > * {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Platemate — UI Component Library</h1>
+  <p class="page-sub">Plain HTML/CSS reference for developers. Inspect any element to grab exact styles. Icons via Tabler Icons.</p>
+
+  <!-- ============================================================
+       PHONE FRAME
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Phone Frame + Top Bar + Nav Bar</div>
+    <div class="component-row">
+      <div class="component-block">
+        <div class="component-label">.phone + .topbar + .bod + .nav</div>
+        <div class="phone">
+          <div class="topbar"><span>Screen title</span></div>
+          <div class="bod">
+            <div class="sec-header">Content goes here</div>
+            <div class="note-text">bod = phone body padding area</div>
+          </div>
+          <div class="nav">
+            <div class="nav-item active"><i class="ti ti-home"></i>Home</div>
+            <div class="nav-item"><i class="ti ti-search"></i>Search</div>
+            <div class="nav-item"><i class="ti ti-upload"></i>Upload</div>
+            <div class="nav-item"><i class="ti ti-heart"></i>Saved</div>
+            <div class="nav-item"><i class="ti ti-user"></i>Profile</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       INPUTS & BUTTONS
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Inputs & Buttons</div>
+    <div class="component-row">
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.field</div>
+        <div class="field"><span style="color:#aaa;">Placeholder text</span><i class="ti ti-mail"></i></div>
+      </div>
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.field.active (focused)</div>
+        <div class="field active"><span>Active input</span><i class="ti ti-search"></i></div>
+      </div>
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.textarea-mock</div>
+        <div class="textarea-mock">Write your review here...</div>
+      </div>
+
+      <div class="component-block" style="width:120px;">
+        <div class="component-label">.btn-primary</div>
+        <div class="btn-primary">Log in</div>
+      </div>
+
+      <div class="component-block" style="width:120px;">
+        <div class="component-label">.btn-outline</div>
+        <div class="btn-outline">Create account</div>
+      </div>
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.field-label + .field</div>
+        <div class="field-label">Email</div>
+        <div class="field"><span>student@email.com</span><i class="ti ti-mail"></i></div>
+      </div>
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.link-text</div>
+        <div class="link-text">Forgot password?</div>
+      </div>
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.divider-row (OR)</div>
+        <div class="divider-row">
+          <div class="line"></div>
+          <div class="or-text">or</div>
+          <div class="line"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       RECIPE CARDS & BADGES
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Recipe Cards & Badges</div>
+    <div class="component-row">
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.recipe-card + .badge-ok</div>
+        <div class="recipe-card">
+          <div class="recipe-card-left">Chicken fried rice<small>20 min · ★ 4.8</small></div>
+          <div class="badge-ok">0 missing</div>
+        </div>
+      </div>
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.recipe-card + .badge-warn</div>
+        <div class="recipe-card">
+          <div class="recipe-card-left">Beef lasagna<small>30 min · ★ 4.6</small></div>
+          <div class="badge-warn">2 missing</div>
+        </div>
+      </div>
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.recipe-card + .badge-safe</div>
+        <div class="recipe-card">
+          <div class="recipe-card-left">Garlic fried rice<small>15 min · ★ 4.5</small></div>
+          <div class="badge-safe">Safe</div>
+        </div>
+      </div>
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.recipe-card + .badge-pop</div>
+        <div class="recipe-card">
+          <div class="recipe-card-left">Egg drop soup<small>10 min · ★ 4.5</small></div>
+          <div class="badge-pop">Popular</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TAG PILLS
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Tag Pills (Filters / Ingredients)</div>
+    <div class="component-row">
+      <div class="component-block">
+        <div class="component-label">.tag / .tag.active / .tag-add</div>
+        <div class="tags-row">
+          <span class="tag active">Vegetarian</span>
+          <span class="tag active">Gluten-free</span>
+          <span class="tag">Vegan</span>
+          <span class="tag">Halal</span>
+          <span class="tag-add">+ Add</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       REVIEW BOX
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Review Box</div>
+    <div class="component-row">
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.review-box (other user)</div>
+        <div class="review-box">
+          <div class="review-box-top">
+            <div style="display:flex;align-items:center;gap:3px;">
+              <span class="review-name">chef_max</span>
+              <span class="badge-tier">Top reviewer</span>
+            </div>
+            <span class="stars-sm">★★★★★</span>
+          </div>
+          <div class="review-text">So easy and delicious!</div>
+        </div>
+      </div>
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.review-box (your review)</div>
+        <div class="review-box">
+          <div class="review-box-top">
+            <span class="review-name">you</span>
+            <span class="stars-sm">★★★★<span class="off">★</span></span>
+          </div>
+          <div class="review-text">Really easy to make after class!</div>
+          <div class="review-actions"><a>Edit</a> · <a>Delete</a></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       STARS
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Stars</div>
+    <div class="component-row">
+
+      <div class="component-block">
+        <div class="component-label">.stars-sm (inline, review boxes)</div>
+        <span class="stars-sm">★★★★<span class="off">★</span></span>
+      </div>
+
+      <div class="component-block">
+        <div class="component-label">.stars-lg (write review selector)</div>
+        <span class="stars-lg">★★★★<span class="off">★</span></span>
+      </div>
+
+      <div class="component-block">
+        <div class="component-label">.rating-line (stars + count)</div>
+        <div class="rating-line">
+          <span class="stars-sm">★★★★★</span>
+          <span class="rating-count">4.8 · 42 reviews</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SERVING SIZE SCALER
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Serving Size Scaler</div>
+    <div class="component-row">
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.scaler (default)</div>
+        <div class="scaler">
+          <span class="scaler-label">Servings</span>
+          <div class="scaler-controls">
+            <div class="scaler-btn">−</div>
+            <span class="scaler-value">2</span>
+            <div class="scaler-btn">+</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-block" style="width:200px;">
+        <div class="component-label">.scaler (updated)</div>
+        <div class="scaler">
+          <span class="scaler-label">Servings</span>
+          <div class="scaler-controls">
+            <div class="scaler-btn">−</div>
+            <span class="scaler-value updated">4</span>
+            <div class="scaler-btn">+</div>
+          </div>
+        </div>
+        <div class="update-note">Quantities updated automatically</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       INGREDIENT LINES
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Ingredient Lines</div>
+    <div class="component-row">
+
+      <div class="component-block" style="width:180px;">
+        <div class="component-label">.ing-line (scaler view)</div>
+        <div class="ing-line"><span class="ing-name">Flour</span><span class="ing-qty">1 cup</span></div>
+        <div class="ing-line"><span class="ing-name">Eggs</span><span class="ing-qty updated">4</span></div>
+        <div class="ing-line"><span class="ing-name">Milk</span><span class="ing-qty updated">1 cup</span></div>
+      </div>
+
+      <div class="component-block" style="width:180px;">
+        <div class="component-label">.ing-have / .ing-missing</div>
+        <div class="ing-have"><i class="ti ti-check" style="font-size:10px;"></i>Chicken</div>
+        <div class="ing-have"><i class="ti ti-check" style="font-size:10px;"></i>Rice</div>
+        <div class="ing-missing"><i class="ti ti-x" style="font-size:10px;"></i>Soy sauce <span style="font-size:8px;color:#aaa;">(missing)</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       RECIPE GUIDE STEPS
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Recipe Guide Steps</div>
+    <div class="component-row">
+      <div class="component-block" style="width:220px;">
+        <div class="component-label">.step + .step-num + .step-text</div>
+        <div class="step"><div class="step-num">1</div><div class="step-text">Butter one side of each bread slice.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">Place cheese between unbuttered sides.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Cook on medium heat 2–3 min per side until golden.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       BANNERS
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Banners</div>
+    <div class="component-row">
+
+      <div class="component-block" style="width:220px;">
+        <div class="component-label">.banner-warn (duplicate / allergen)</div>
+        <div class="banner-warn">
+          <strong style="font-size:8px;">⚠ Similar recipe found</strong><br>
+          A matching recipe already exists. You can still publish if yours is different.
+        </div>
+      </div>
+
+      <div class="component-block" style="width:220px;">
+        <div class="component-label">.banner-info (filter active)</div>
+        <div class="banner-info"><i class="ti ti-shield-check" style="font-size:10px;"></i>Peanut allergy active — unsafe recipes hidden</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       IMAGE PLACEHOLDERS
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Image Placeholders</div>
+    <div class="component-row">
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.img-placeholder</div>
+        <div class="img-placeholder">[ Recipe photo ]</div>
+      </div>
+
+      <div class="component-block" style="width:160px;">
+        <div class="component-label">.img-placeholder.dashed (upload)</div>
+        <div class="img-placeholder dashed"><i class="ti ti-camera" style="font-size:14px;color:var(--red);"></i> Add photo</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       LOGO AREA (login)
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Logo Area (Login Screen)</div>
+    <div class="component-row">
+      <div class="component-block">
+        <div class="component-label">.logo-area + .logo-icon + .logo-name + .logo-sub</div>
+        <div class="logo-area">
+          <div class="logo-icon"><i class="ti ti-salad" style="font-size:20px;color:#fff;"></i></div>
+          <div class="logo-name">Platemate</div>
+          <div class="logo-sub">Cook smarter, together</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       COLOR TOKENS
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Color Tokens</div>
+    <div class="component-row">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#E24B4A;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--red<br>#E24B4A</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#FCEBEB;border:1px solid #eee;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--red-light<br>#FCEBEB</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#F09595;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--red-mid<br>#F09595</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#F7C1C1;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--red-border<br>#F7C1C1</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#791F1F;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--red-dark<br>#791F1F</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#A32D2D;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--red-darker<br>#A32D2D</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#FAEEDA;border:1px solid #eee;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--warn-bg<br>#FAEEDA</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#633806;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--warn-text<br>#633806</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#e8f5e9;border:1px solid #eee;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--safe-bg<br>#e8f5e9</div></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;border-radius:6px;background:#2a7a2a;"></div><div style="font-size:9px;margin-top:4px;font-family:monospace;">--safe-text<br>#2a7a2a</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ICON REFERENCE
+  ============================================================ -->
+  <div class="section">
+    <div class="section-title">Tabler Icons Used — cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css</div>
+    <div class="component-row" style="flex-wrap:wrap;gap:16px;">
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-home" style="font-size:20px;display:block;"></i>ti-home</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-search" style="font-size:20px;display:block;"></i>ti-search</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-upload" style="font-size:20px;display:block;"></i>ti-upload</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-heart" style="font-size:20px;display:block;"></i>ti-heart</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-user" style="font-size:20px;display:block;"></i>ti-user</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-salad" style="font-size:20px;display:block;"></i>ti-salad</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-mail" style="font-size:20px;display:block;"></i>ti-mail</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-eye" style="font-size:20px;display:block;"></i>ti-eye</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-flame" style="font-size:20px;display:block;"></i>ti-flame</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-check" style="font-size:20px;display:block;"></i>ti-check</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-x" style="font-size:20px;display:block;"></i>ti-x</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-camera" style="font-size:20px;display:block;"></i>ti-camera</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-clock" style="font-size:20px;display:block;"></i>ti-clock</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-shield-check" style="font-size:20px;display:block;"></i>ti-shield-check</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-alert-triangle" style="font-size:20px;display:block;"></i>ti-alert-triangle</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-chevron-down" style="font-size:20px;display:block;"></i>ti-chevron-down</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-settings" style="font-size:20px;display:block;"></i>ti-settings</div>
+      <div style="text-align:center;font-size:9px;font-family:monospace;"><i class="ti ti-plus" style="font-size:20px;display:block;"></i>ti-plus</div>
+    </div>
+  </div>
+
+</body>
+</html>
