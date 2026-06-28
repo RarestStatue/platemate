@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: platemate-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-platemate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-platemate}
+    security_opt:
+      - "no-new-privileges:true"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./frontend/prisma/migrations/20260628190629_init/migration.sql:/docker-entrypoint-initdb.d/init.sql:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platemate} -d ${POSTGRES_DB:-platemate}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - platemate-internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: platemate-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: true
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - platemate-internal
+
+networks:
+  platemate-internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
