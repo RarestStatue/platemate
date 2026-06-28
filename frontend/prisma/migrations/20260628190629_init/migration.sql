@@ -1,3 +1,14 @@
+BEGIN;
+
+-- Trigger function: auto-update updated_at on row changes
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
@@ -6,10 +17,14 @@ CREATE TABLE "users" (
     "password_hash" TEXT NOT NULL,
     "user_role" TEXT NOT NULL DEFAULT 'user',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" TIMESTAMP(3),
 
-    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "chk_users_email" CHECK ("email" LIKE '%_@_%.__%'),
+    CONSTRAINT "chk_users_username" CHECK (length("username") >= 1 AND "username" ~ '^[a-zA-Z0-9_.-]+$'),
+    CONSTRAINT "chk_users_password_hash" CHECK (length("password_hash") >= 20),
+    CONSTRAINT "chk_users_user_role" CHECK ("user_role" IN ('user', 'moderator', 'admin'))
 );
 
 -- CreateTable
@@ -22,7 +37,7 @@ CREATE TABLE "user_profiles" (
     "recipe_count" INTEGER NOT NULL DEFAULT 0,
     "review_count" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("id")
 );
@@ -38,7 +53,7 @@ CREATE TABLE "user_dietary_restrictions" (
     "peanut_free" BOOLEAN NOT NULL DEFAULT false,
     "dairy_free" BOOLEAN NOT NULL DEFAULT false,
     "allergies" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "user_dietary_restrictions_pkey" PRIMARY KEY ("id")
 );
@@ -69,7 +84,7 @@ CREATE TABLE "recipes" (
     "servings" INTEGER NOT NULL DEFAULT 1,
     "photo_url" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "avg_rating" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "review_count" INTEGER NOT NULL DEFAULT 0,
     "rating_count" INTEGER NOT NULL DEFAULT 0,
@@ -83,7 +98,9 @@ CREATE TABLE "recipes" (
     "has_gluten" BOOLEAN NOT NULL DEFAULT false,
     "has_eggs" BOOLEAN NOT NULL DEFAULT false,
 
-    CONSTRAINT "recipes_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "recipes_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "chk_recipes_prep_time_min" CHECK ("prep_time_min" >= 0),
+    CONSTRAINT "chk_recipes_servings" CHECK ("servings" >= 1)
 );
 
 -- CreateTable
@@ -97,7 +114,8 @@ CREATE TABLE "recipe_ingredients" (
     "sort_order" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "recipe_ingredients_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "recipe_ingredients_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "chk_recipe_ingredients_quantity" CHECK ("quantity" > 0)
 );
 
 -- CreateTable
@@ -137,7 +155,8 @@ CREATE TABLE "user_pantry" (
     "unit" TEXT NOT NULL,
     "last_updated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "user_pantry_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "user_pantry_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "chk_user_pantry_quantity" CHECK ("quantity" > 0)
 );
 
 -- CreateTable
@@ -147,9 +166,10 @@ CREATE TABLE "recipe_ratings" (
     "user_id" INTEGER NOT NULL,
     "rating" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "recipe_ratings_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "recipe_ratings_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "chk_recipe_ratings_rating" CHECK ("rating" BETWEEN 1 AND 5)
 );
 
 -- CreateTable
@@ -159,7 +179,7 @@ CREATE TABLE "recipe_reviews" (
     "user_id" INTEGER NOT NULL,
     "text" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "recipe_reviews_pkey" PRIMARY KEY ("id")
 );
@@ -172,7 +192,7 @@ CREATE TABLE "recipe_comments" (
     "text" TEXT NOT NULL,
     "parent_comment_id" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "recipe_comments_pkey" PRIMARY KEY ("id")
 );
@@ -194,7 +214,8 @@ CREATE TABLE "user_follows" (
     "following_id" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "user_follows_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "user_follows_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "chk_no_self_follow" CHECK ("follower_id" != "following_id")
 );
 
 -- CreateTable
@@ -221,7 +242,8 @@ CREATE TABLE "recipe_duplicate_flags" (
     "flagged_reason" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "recipe_duplicate_flags_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "recipe_duplicate_flags_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "chk_recipe_duplicate_flags_similarity_score" CHECK ("similarity_score" BETWEEN 0 AND 1)
 );
 
 -- CreateIndex
@@ -262,6 +284,10 @@ CREATE UNIQUE INDEX "user_recipe_saves_user_id_recipe_id_key" ON "user_recipe_sa
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_follows_follower_id_following_id_key" ON "user_follows"("follower_id", "following_id");
+
+-- CreateIndex
+CREATE INDEX "recipes_fts_idx" ON "recipes"
+    USING GIN (to_tsvector('english', coalesce("title", '') || ' ' || coalesce("description", '')));
 
 -- AddForeignKey
 ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -340,3 +366,34 @@ ALTER TABLE "recipe_duplicate_flags" ADD CONSTRAINT "recipe_duplicate_flags_orig
 
 -- AddForeignKey
 ALTER TABLE "recipe_duplicate_flags" ADD CONSTRAINT "recipe_duplicate_flags_candidate_recipe_id_fkey" FOREIGN KEY ("candidate_recipe_id") REFERENCES "recipes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- CreateTrigger: auto-update updated_at on modification
+CREATE TRIGGER "trg_users_updated_at"
+    BEFORE UPDATE ON "users"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER "trg_user_profiles_updated_at"
+    BEFORE UPDATE ON "user_profiles"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER "trg_user_dietary_updated_at"
+    BEFORE UPDATE ON "user_dietary_restrictions"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER "trg_recipes_updated_at"
+    BEFORE UPDATE ON "recipes"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER "trg_recipe_ratings_updated_at"
+    BEFORE UPDATE ON "recipe_ratings"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER "trg_recipe_reviews_updated_at"
+    BEFORE UPDATE ON "recipe_reviews"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER "trg_recipe_comments_updated_at"
+    BEFORE UPDATE ON "recipe_comments"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+COMMIT;
