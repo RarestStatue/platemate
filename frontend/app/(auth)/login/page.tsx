@@ -27,19 +27,22 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
 
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Invalid email or password");
-    } else {
-      router.push("/home");
-      router.refresh();
+      if (result?.error) {
+        setError("Invalid email or password");
+      } else {
+        router.push("/home");
+      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -54,7 +57,7 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold text-foreground mb-1">Platemate</h1>
       <p className="text-muted mb-8">Cook smarter, together</p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+      <form onSubmit={handleSubmit(onSubmit)} method="post" className="space-y-4 text-left">
         {error && (
           <div className="bg-red-light text-red-dark text-sm p-3 rounded-lg">
             {error}
