@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import { prisma } from "@/lib/db";
 import TrendingHero from "@/components/sections/TrendingHero";
 import NewFromCommunity from "@/components/sections/NewFromCommunity";
@@ -59,7 +58,6 @@ async function getNewRecipes(): Promise<RecipeCardData[]> {
 }
 
 export default async function HomePage() {
-  await connection();
   const [trending, newest] = await Promise.all([
     getTrendingRecipes(),
     getNewRecipes(),

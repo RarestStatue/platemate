@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { IconUpload, IconHeart, IconUser } from "@tabler/icons-react";
+import { IconHome, IconUpload, IconHeart, IconUser } from "@tabler/icons-react";
 
 const TITLES: Record<string, string> = {
   "/home": "Home",
@@ -31,6 +31,13 @@ export default function Header() {
 
       {/* SECURITY: all hrefs are hardcoded internal paths — no open-redirect risk */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <Link
+          href="/home"
+          aria-label="Home"
+          className="rounded-full p-1 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white transition-colors"
+        >
+          <IconHome size={24} aria-hidden />
+        </Link>
         <Link
           href="/upload"
           aria-label="Upload recipe"
