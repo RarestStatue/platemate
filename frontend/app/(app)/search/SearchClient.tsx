@@ -34,6 +34,9 @@ export default function SearchClient() {
     Object.entries(dietaryFilters).forEach(([key, val]) => {
       if (val) params.set(key, "true");
     });
+    ingredients.forEach((ingredient) => {
+      params.append("ingredient", ingredient);
+    });
 
     try {
       const res = await fetch(`/api/recipes?${params.toString()}`);
@@ -44,7 +47,7 @@ export default function SearchClient() {
     } finally {
       setLoading(false);
     }
-  }, [query, maxPrepTime, sort, dietaryFilters]);
+  }, [query, maxPrepTime, sort, dietaryFilters, ingredients]);
 
   useEffect(() => {
     fetchRecipes();

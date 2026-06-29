@@ -12,12 +12,14 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get("cursor");
     const sort = searchParams.get("sort") || "newest";
     const maxPrepTime = searchParams.get("maxPrepTime");
-    const vegetarian = searchParams.get("vegetarian") === "true";
-    const vegan = searchParams.get("vegan") === "true";
+    const selectedIngredients = searchParams.getAll("ingredient");
     const glutenFree = searchParams.get("glutenFree") === "true";
-    const halal = searchParams.get("halal") === "true";
     const peanutFree = searchParams.get("peanutFree") === "true";
     const dairyFree = searchParams.get("dairyFree") === "true";
+    // Dietary filters: Future
+    //const vegetarian = searchParams.get("vegetarian") === "true";
+    //const vegan = searchParams.get("vegan") === "true";
+    //const halal = searchParams.get("halal") === "true";
 
     // Build WHERE clause
     const where: Prisma.RecipeWhereInput = {};
@@ -35,6 +37,21 @@ export async function GET(request: NextRequest) {
       if (!isNaN(parsed) && parsed > 0) {
         where.prepTimeMin = { lte: parsed };
       }
+    }
+
+    // Ingredient filters
+    if (selectedIngredients.length > 0) {
+      where.ingredients = {
+        some: {
+          ingredient: {
+            name: {
+              in: selectedIngredients.map((i) =>
+                i.trim().toLowerCase().replace(/\s+/g, " ")
+              ),
+            },
+          },
+        },
+      };
     }
 
     // Dietary filters: exclude recipes with allergens
@@ -129,6 +146,35 @@ export async function POST(request: NextRequest) {
 
     // Create recipe in transaction
     const recipe = await prisma.$transaction(async (tx) => {
+      // Normalize and upsert ingredients first
+      const normalizedIngredients = await Promise.all(
+        ingredients.map(async (ing) => {
+          const normalizedName = ing.ingredient
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " ");
+
+          const ingredient = await tx.ingredient.upsert({
+            where: {
+              name: normalizedName,
+            },
+            update: {},
+            create: {
+              name: normalizedName,
+              displayName: ing.ingredient.trim(),
+              defaultUnit: ing.unit,
+            },
+          });
+
+          return {
+            ingredientId: ingredient.id,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            notes: ing.notes || null,
+          };
+        })
+      );
+
       const newRecipe = await tx.recipe.create({
         data: {
           creatorId: userId,
@@ -136,15 +182,17 @@ export async function POST(request: NextRequest) {
           description: description || null,
           prepTimeMin,
           servings,
+
           ingredients: {
-            create: ingredients.map((ing, i) => ({
-              ingredient: ing.ingredient,
+            create: normalizedIngredients.map((ing, i) => ({
+              ingredientId: ing.ingredientId,
               quantity: ing.quantity,
               unit: ing.unit,
-              notes: ing.notes || null,
-              sortOrder: i,
+              notes: ing.notes,
+              sortOrder: i + 1,
             })),
           },
+
           steps: {
             create: steps.map((step, i) => ({
               stepNumber: i + 1,
@@ -153,7 +201,11 @@ export async function POST(request: NextRequest) {
             })),
           },
         },
-        select: { id: true, title: true },
+
+        select: {
+          id: true,
+          title: true,
+        },
       });
 
       // Increment creator's recipe count

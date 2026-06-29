@@ -23,7 +23,10 @@ export async function GET(
             profile: { select: { avatarUrl: true } },
           },
         },
-        ingredients: { orderBy: { sortOrder: "asc" } },
+        ingredients: {
+          orderBy: { sortOrder: "asc" },
+          include: { ingredient: true },
+        },
         steps: { orderBy: { stepNumber: "asc" } },
         reviews: {
           include: {
@@ -80,6 +83,14 @@ export async function GET(
         username: recipe.creator.username,
         avatarUrl: recipe.creator.profile?.avatarUrl ?? null,
       },
+      ingredients: recipe.ingredients.map((i) => ({
+        id: i.id,
+        ingredient: i.ingredient.displayName,
+        quantity: i.quantity,
+        unit: i.unit,
+        notes: i.notes,
+        sortOrder: i.sortOrder,
+      })),
       isSaved,
       userRating,
     });
