@@ -18,17 +18,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = String(credentials.email).toLowerCase().trim();
         const password = String(credentials.password);
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            userRole: true,
-            passwordHash: true,
-            deletedAt: true,
-          },
-        });
+        let user;
+        try {
+          user = await prisma.user.findUnique({
+            where: { email },
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              userRole: true,
+              passwordHash: true,
+              deletedAt: true,
+            },
+          });
+        } catch (err) {
+          console.error("[auth] DB error during login:", err);
+          return null;
+        }
 
         if (!user || user.deletedAt) {
           return null;

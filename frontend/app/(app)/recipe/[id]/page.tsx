@@ -22,7 +22,10 @@ export default async function RecipeDetailPage({
           profile: { select: { avatarUrl: true } },
         },
       },
-      ingredients: { orderBy: { sortOrder: "asc" } },
+      ingredients: {
+        orderBy: { sortOrder: "asc" },
+        include: { ingredient: true },
+      },
       steps: { orderBy: { stepNumber: "asc" } },
       reviews: {
         include: {
@@ -81,8 +84,12 @@ export default async function RecipeDetailPage({
       avatarUrl: recipe.creator.profile?.avatarUrl ?? null,
     },
     ingredients: recipe.ingredients.map((i) => ({
-      ...i,
-      createdAt: i.createdAt.toISOString(),
+      id: i.id,
+      ingredient: i.ingredient.displayName,
+      quantity: i.quantity,
+      unit: i.unit,
+      notes: i.notes,
+      sortOrder: i.sortOrder,
     })),
     steps: recipe.steps.map((s) => ({
       ...s,
