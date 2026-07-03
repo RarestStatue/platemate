@@ -4,6 +4,11 @@ import NewFromCommunity from "@/components/sections/NewFromCommunity";
 import HomeSearch from "./HomeSearch";
 import type { RecipeCardData } from "@/lib/types";
 
+// This page queries recipes directly and lists their ids as links; without
+// this it gets statically frozen at build time and serves stale/deleted
+// recipe ids (404s) until the next `next build`.
+export const revalidate = 60;
+
 async function getTrendingRecipes(): Promise<RecipeCardData[]> {
   const recipes = await prisma.recipe.findMany({
     take: 10,

@@ -119,3 +119,19 @@ Run from the `frontend` directory:
 npx prisma db push --force-reset
 npx prisma db seed
 ```
+
+---
+
+## Frontend scripts
+
+Run from the `frontend` directory:
+
+| Script | Command | Purpose |
+|---|---|---|
+| `npm run dev` | `next dev` | Start dev server |
+| `npm run build` | `next build` | Production build |
+| `npm run start` | `next start` | Run production build |
+| `npm run lint` | `eslint .` | Lint code |
+| `npm run typecheck` | `tsc --noEmit` | Type-check without emitting |
+| `npm test` | `vitest run` | Run tests |
+| `npm run db:up` | `docker compose -f ../docker-compose.yml up -d --wait && npx prisma migrate deploy` | Start DB via Docker + apply migrations |
