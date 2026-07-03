@@ -86,6 +86,13 @@ npx prisma db seed
 npm run dev
 ```
 
+Faster method
+```bash
+npm run build
+npm run start
+```
+
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { recipeUpdateSchema } from "@/lib/validators";
 
 export async function GET(
   _request: NextRequest,
@@ -131,22 +132,17 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, description, prepTimeMin, servings } = body;
+    const parsed = recipeUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return Response.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
 
     const updated = await prisma.recipe.update({
       where: { id: recipeId },
-      data: {
-        ...(title && { title: String(title).slice(0, 200) }),
-        ...(description !== undefined && {
-          description: description ? String(description).slice(0, 2000) : null,
-        }),
-        ...(prepTimeMin !== undefined && {
-          prepTimeMin: Math.max(0, Math.min(1440, Number(prepTimeMin))),
-        }),
-        ...(servings !== undefined && {
-          servings: Math.max(1, Math.min(100, Number(servings))),
-        }),
-      },
+      data: parsed.data,
       select: { id: true, title: true },
     });
 
