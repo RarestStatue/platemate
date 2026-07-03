@@ -13,12 +13,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  user
+  moderator
+  admin
+}
+
 model User {
   id           Int       @id @default(autoincrement())
   email        String    @unique
   username     String    @unique
   passwordHash String    @map("password_hash")
-  userRole     String    @default("user") @map("user_role")
+  userRole     UserRole  @default(user) @map("user_role")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
@@ -129,6 +135,12 @@ model Recipe {
   duplicateOriginals  RecipeDuplicateFlag[] @relation("original")
   duplicateCandidates RecipeDuplicateFlag[] @relation("candidate")
 
+  @@index([creatorId])
+  @@index([createdAt(sort: Desc)])
+  @@index([avgRating(sort: Desc)])
+  @@index([saveCount(sort: Desc)])
+  @@index([prepTimeMin])
+  @@index([lastEngagementAt(sort: Desc)])
   @@map("recipes")
 }
 
@@ -241,6 +253,8 @@ model RecipeComment {
   parent  RecipeComment?  @relation("commentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
   replies RecipeComment[] @relation("commentThread")
 
+  @@index([recipeId])
+  @@index([parentCommentId])
   @@map("recipe_comments")
 }
 
@@ -254,6 +268,7 @@ model UserRecipeSave {
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, recipeId])
+  @@index([recipeId])
   @@map("user_recipe_saves")
 }
 
@@ -267,6 +282,7 @@ model UserFollow {
   following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
+  @@index([followingId])
   @@map("user_follows")
 }
 
@@ -285,6 +301,7 @@ model ShoppingListItem {
   ingredient Ingredient? @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
   recipe     Recipe?     @relation(fields: [fromRecipeId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
   @@map("shopping_list_items")
 }
 

@@ -21,6 +21,7 @@ export async function GET(
           select: {
             id: true,
             username: true,
+            deletedAt: true,
             profile: { select: { avatarUrl: true } },
           },
         },
@@ -53,7 +54,8 @@ export async function GET(
       },
     });
 
-    if (!recipe) {
+    // SECURITY: hide recipes belonging to soft-deleted users, same as their profile
+    if (!recipe || recipe.creator.deletedAt) {
       return Response.json({ error: "Recipe not found" }, { status: 404 });
     }
 
