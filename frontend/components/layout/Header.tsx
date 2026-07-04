@@ -43,7 +43,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-cream/85 pt-safe backdrop-blur">
-      <div className="mx-auto flex max-w-[1280px] items-center gap-6 px-4 py-3 pl-safe pr-safe sm:px-8">
+      <div className="mx-auto flex max-w-[1280px] items-center gap-6 px-5 py-3 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] sm:px-8">
         <Link
           href="/home"
           className="flex shrink-0 items-center gap-2"
