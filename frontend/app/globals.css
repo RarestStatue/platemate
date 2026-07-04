@@ -243,3 +243,73 @@ body { overscroll-behavior-y: none; }
   100% { transform: scaleX(0); transform-origin: right; }
 }
 .sweep { animation: sweep 3.6s cubic-bezier(0.7, 0, 0.3, 1) infinite; }
+
+/* ────────────────────────────────────────────────
+   Landing scrollytelling helpers
+   ──────────────────────────────────────────────── */
+
+/* Reading progress bar (top of viewport, scaleX from 0..1) */
+.scroll-progress-fill {
+  transform-origin: left center;
+  will-change: transform;
+}
+
+/* Hero display type: each char wrapped in .hero-char, hidden before GSAP kicks in */
+.hero-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(1em);
+  will-change: transform, opacity;
+}
+.hero-line { display: block; overflow: hidden; padding-bottom: 0.05em; }
+
+/* Elements GSAP will fade-in on scroll — initial hidden to avoid FOUC */
+.will-anim {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Kinetic type stage */
+.kt-stage {
+  perspective: 1200px;
+}
+.kt-word {
+  font-variant-ligatures: none;
+  letter-spacing: -0.06em;
+}
+
+/* Plate assembly: base ingredient state */
+.pa-item {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.pa-label { will-change: transform, opacity; }
+
+/* Steam draw-in path: dashed then filled via GSAP */
+.steam-path {
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+}
+
+/* Ingredient river bob wrapper — inner span floats independently of scroll */
+.river-item {
+  will-change: transform;
+}
+
+/* Falling bills initial */
+.falling-bill {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* When user prefers reduced motion, neutralise setups so content is legible */
+@media (prefers-reduced-motion: reduce) {
+  .hero-char { opacity: 1; transform: none; }
+  .will-anim { opacity: 1; }
+  .pa-item, .pa-label { opacity: 1; }
+  .steam-path { stroke-dashoffset: 0; }
+  .marquee-track { animation: none; }
+  .floaty { animation: none; }
+  .sweep { animation: none; }
+  .falling-bill { opacity: 1; }
+}
