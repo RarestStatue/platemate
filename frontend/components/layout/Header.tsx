@@ -14,6 +14,7 @@ import {
 } from "@tabler/icons-react";
 import clsx from "clsx";
 import LogoMark from "@/components/landing/LogoMark";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 const TITLES: Record<string, string> = {
   "/home": "Home",
@@ -89,6 +90,7 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="ml-auto flex items-center gap-1 md:ml-0">
+          <ThemeToggle />
           <Link
             href="/saved"
             aria-label="Notifications"

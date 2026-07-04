@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   /* Editorial mono palette */
   --color-ink: #0B0B0A;
   --color-ink-soft: #2A2A28;
@@ -37,6 +37,59 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Dark mode: swap semantic tokens. Utilities using --color-* auto-update. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Dark palette — warm editorial charcoal.
+ * Design intent: layered warm off-blacks (never #000), soft off-white type
+ * (never #fff), tuned matcha + ember for legibility. Elevation increases
+ * with each surface: cream (base) → paper → white → paper-warm.
+ */
+.dark {
+  --color-ink: #ECE4D2;
+  --color-ink-soft: #C7BFAB;
+  --color-ink-mute: #8E877A;
+  --color-hairline: #33302A;
+  --color-paper: #23201B;
+  --color-paper-warm: #2A2620;
+  --color-cream: #1B1A17;
+  --color-white: #26221C;
+
+  --color-matcha: #A9C7A2;
+  --color-matcha-soft: #2F3D2F;
+  --color-ember: #E58966;
+
+  --color-red: var(--color-ink);
+  --color-red-light: var(--color-paper-warm);
+  --color-red-mid: var(--color-ink-mute);
+  --color-red-border: var(--color-hairline);
+  --color-red-dark: var(--color-ink);
+  --color-red-darker: var(--color-ink);
+  --color-warn-bg: #3A2E12;
+  --color-warn-text: #E9C878;
+  --color-safe-bg: var(--color-matcha-soft);
+  --color-safe-text: var(--color-matcha);
+  --color-background: var(--color-cream);
+  --color-foreground: var(--color-ink);
+  --color-muted: var(--color-ink-mute);
+  --color-border: var(--color-hairline);
+
+  color-scheme: dark;
+}
+
+/* Softer selection in dark */
+.dark ::selection {
+  background: var(--color-matcha);
+  color: var(--color-cream);
+}
+
+/* Grain looks bad on dark (multiply darkens further) — flip to screen + lighter */
+.dark .grain::before {
+  mix-blend-mode: screen;
+  opacity: 0.06;
+}
+
 @layer base {
   html {
     background: var(--color-cream);
@@ -44,6 +97,7 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   body {
@@ -81,6 +135,7 @@
     background: var(--color-ink);
     opacity: 0.9;
   }
+  .dark .rule { opacity: 0.35; }
 
   .hairline {
     height: 1px;
