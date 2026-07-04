@@ -43,9 +43,6 @@
     "typescript": "^5",
     "vitest": "^3.2.4"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "allowScripts": {
     "prisma@6.19.3": true,
     "sharp@0.34.5": true,
