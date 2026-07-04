@@ -3,68 +3,69 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { IconHome, IconUpload, IconHeart, IconUser } from "@tabler/icons-react";
+import { IconBell, IconLogout } from "@tabler/icons-react";
+import LogoMark from "@/components/landing/LogoMark";
 
 const TITLES: Record<string, string> = {
   "/home": "Home",
   "/search": "Search",
   "/upload": "Upload recipe",
-  "/saved": "My favourites",
+  "/saved": "Favourites",
   "/settings": "Settings",
   "/discover": "Discover",
   "/trending": "Trending",
+  "/profile": "Profile",
 };
 
 export default function Header() {
   const pathname = usePathname();
 
-  // Match route titles, fall back to dynamic routes
-  let title = TITLES[pathname] || "";
-  if (pathname.startsWith("/recipe/")) title = "Recipe";
-  if (pathname.startsWith("/profile/")) title = "Profile";
-
-  if (!title) return null;
+  let sub = TITLES[pathname] || "";
+  if (pathname.startsWith("/recipe/")) sub = "Recipe";
+  if (pathname.startsWith("/profile/")) sub = "Profile";
 
   return (
-    <header className="bg-red text-white py-3 px-4 sticky top-0 z-40 relative flex items-center justify-center">
-      <span className="font-semibold text-lg">{title}</span>
+    <header className="sticky top-0 z-40 border-b border-hairline bg-cream/85 backdrop-blur">
+      <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-3 sm:px-8">
+        <Link href="/home" className="flex items-center gap-2" aria-label="platemate home">
+          <LogoMark className="h-7 w-7" />
+          <span className="font-serif text-xl leading-none tracking-tight">
+            platemate<span className="text-matcha">.</span>
+          </span>
+          {sub && (
+            <>
+              <span aria-hidden className="mx-2 h-4 w-px bg-ink/25" />
+              <span className="text-[10px] uppercase tracking-[0.22em] text-ink-mute">
+                {sub}
+              </span>
+            </>
+          )}
+        </Link>
 
-      {/* SECURITY: all hrefs are hardcoded internal paths — no open-redirect risk */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1">
-        <Link
-          href="/home"
-          aria-label="Home"
-          className="rounded-full p-1 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white transition-colors"
-        >
-          <IconHome size={24} aria-hidden />
-        </Link>
-        <Link
-          href="/upload"
-          aria-label="Upload recipe"
-          className="rounded-full p-1 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white transition-colors"
-        >
-          <IconUpload size={24} aria-hidden />
-        </Link>
-        <Link
-          href="/saved"
-          aria-label="My favourites"
-          className="rounded-full p-1 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white transition-colors"
-        >
-          <IconHeart size={24} aria-hidden />
-        </Link>
-        <Link
-          href="/profile"
-          aria-label="Go to profile"
-          className="rounded-full p-1 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white transition-colors"
-        >
-          <IconUser size={24} aria-hidden />
-        </Link>
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="px-2 py-1 text-sm font-medium hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white rounded transition-colors"
-        >
-          Logout
-        </button>
+        {/* SECURITY: hrefs are hardcoded internal paths */}
+        <div className="flex items-center gap-1">
+          <Link
+            href="/saved"
+            aria-label="Notifications"
+            className="rounded-full p-2 text-ink-soft transition hover:bg-ink/5 hover:text-ink"
+          >
+            <IconBell size={20} strokeWidth={1.5} aria-hidden />
+          </Link>
+          <Link
+            href="/profile"
+            aria-label="Profile"
+            className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-ink/20 bg-white text-xs font-medium text-ink hover:border-ink"
+          >
+            me
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            aria-label="Sign out"
+            className="ml-1 hidden rounded-full p-2 text-ink-soft transition hover:bg-ink/5 hover:text-ink sm:inline-flex"
+          >
+            <IconLogout size={18} strokeWidth={1.5} aria-hidden />
+          </button>
+        </div>
       </div>
     </header>
   );

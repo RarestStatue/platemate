@@ -23,8 +23,8 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border z-50 md:hidden">
-      <div className="flex items-center justify-around py-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-hairline bg-cream/95 backdrop-blur md:hidden">
+      <div className="flex items-center justify-around px-2 py-2">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive =
             pathname === href || pathname.startsWith(href + "/");
@@ -33,14 +33,18 @@ export default function BottomNav() {
               key={href}
               href={href}
               className={clsx(
-                "flex flex-col items-center gap-0.5 text-xs transition-colors min-w-[48px]",
-                isActive ? "text-red" : "text-muted"
+                "relative flex min-w-[48px] flex-col items-center gap-1 py-1 text-[10px] uppercase tracking-[0.14em] transition-colors",
+                isActive ? "text-ink" : "text-ink-mute"
               )}
             >
-              <Icon size={22} stroke={isActive ? 2.5 : 1.5} />
-              <span className={clsx(isActive && "font-semibold")}>
-                {label}
-              </span>
+              <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
+              <span className={clsx(isActive && "font-medium")}>{label}</span>
+              {isActive && (
+                <span
+                  aria-hidden
+                  className="absolute -top-2 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-matcha"
+                />
+              )}
             </Link>
           );
         })}
