@@ -123,6 +123,24 @@
 }
 .floaty { animation: floaty 6s ease-in-out infinite; }
 
+/* Bottom sheet slide-up */
+@keyframes slideup {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slideup { animation: slideup 0.25s ease-out; }
+
+/* Safe-area helpers for standalone PWA on iOS/Android */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pl-safe { padding-left: env(safe-area-inset-left); }
+.pr-safe { padding-right: env(safe-area-inset-right); }
+.mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+
+/* Prevent tap flash + long-press callout on iOS install */
+html, body { -webkit-tap-highlight-color: transparent; }
+body { overscroll-behavior-y: none; }
+
 /* Ticker underline sweep */
 @keyframes sweep {
   0% { transform: scaleX(0); transform-origin: left; }
