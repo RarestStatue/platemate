@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import Landing from "@/components/landing/Landing";
 
 export default async function RootPage() {
-  const session = await auth();
-  if (session) {
-    redirect("/home");
-  } else {
-    redirect("/login");
+  try {
+    // Deferred import so preview works without a generated Prisma client.
+    const { auth } = await import("@/lib/auth");
+    const session = await auth();
+    if (session) redirect("/home");
+  } catch {
+    // DB / auth not configured — show landing anyway.
   }
+  return <Landing />;
 }
