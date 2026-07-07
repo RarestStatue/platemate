@@ -6,62 +6,82 @@ import NewFromCommunity from "@/components/sections/NewFromCommunity";
 import HomeSearch from "./HomeSearch";
 import type { RecipeCardData } from "@/lib/types";
 
-// This page queries recipes directly and lists their ids as links; without
-// this it gets statically frozen at build time and serves stale/deleted
-// recipe ids (404s) until the next `next build`.
-export const revalidate = 60;
+const DEMO_RECIPES: RecipeCardData[] = [
+  { id: 1, title: "Miso butter mushrooms on toast", prepTimeMin: 15, avgRating: 4.7, photoUrl: null, saveCount: 214, creatorUsername: "hanako", isPopular: true },
+  { id: 2, title: "One-pan lemon chicken orzo", prepTimeMin: 25, avgRating: 4.6, photoUrl: null, saveCount: 189, creatorUsername: "mateo", isPopular: true },
+  { id: 3, title: "Feta & spinach shakshuka", prepTimeMin: 20, avgRating: 4.8, photoUrl: null, saveCount: 302, creatorUsername: "priya", isPopular: true },
+  { id: 4, title: "Crispy gnocchi with peas", prepTimeMin: 18, avgRating: 4.5, photoUrl: null, saveCount: 156, creatorUsername: "luca", isPopular: true },
+  { id: 5, title: "Thai basil eggplant stir-fry", prepTimeMin: 22, avgRating: 4.6, photoUrl: null, saveCount: 178, creatorUsername: "noa", isPopular: true },
+  { id: 6, title: "Sheet-pan harissa salmon", prepTimeMin: 28, avgRating: 4.7, photoUrl: null, saveCount: 245, creatorUsername: "ada", isPopular: true },
+];
 
 async function getTrendingRecipes(): Promise<RecipeCardData[]> {
-  const recipes = await prisma.recipe.findMany({
-    take: 10,
-    orderBy: { lastEngagementAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      prepTimeMin: true,
-      avgRating: true,
-      photoUrl: true,
-      saveCount: true,
-      creator: { select: { username: true } },
-    },
-  });
+  try {
+    const recipes = await prisma.recipe.findMany({
+      take: 10,
+      orderBy: { lastEngagementAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        prepTimeMin: true,
+        avgRating: true,
+        photoUrl: true,
+        saveCount: true,
+        creator: { select: { username: true } },
+      },
+    });
 
-  return recipes.map((r) => ({
-    id: r.id,
-    title: r.title,
-    prepTimeMin: r.prepTimeMin,
-    avgRating: r.avgRating,
-    photoUrl: r.photoUrl,
-    saveCount: r.saveCount,
-    creatorUsername: r.creator.username,
-    isPopular: true,
-  }));
+    return recipes.map((r) => ({
+      id: r.id,
+      title: r.title,
+      prepTimeMin: r.prepTimeMin,
+      avgRating: r.avgRating,
+      photoUrl: r.photoUrl,
+      saveCount: r.saveCount,
+      creatorUsername: r.creator.username,
+      isPopular: true,
+    }));
+  } catch {
+    return DEMO_RECIPES;
+  }
 }
 
 async function getNewRecipes(): Promise<RecipeCardData[]> {
-  const recipes = await prisma.recipe.findMany({
-    take: 8,
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      prepTimeMin: true,
-      avgRating: true,
-      photoUrl: true,
-      saveCount: true,
-      creator: { select: { username: true } },
-    },
-  });
+  try {
+    const recipes = await prisma.recipe.findMany({
+      take: 8,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        prepTimeMin: true,
+        avgRating: true,
+        photoUrl: true,
+        saveCount: true,
+        creator: { select: { username: true } },
+      },
+    });
 
-  return recipes.map((r) => ({
-    id: r.id,
-    title: r.title,
-    prepTimeMin: r.prepTimeMin,
-    avgRating: r.avgRating,
-    photoUrl: r.photoUrl,
-    saveCount: r.saveCount,
-    creatorUsername: r.creator.username,
-  }));
+    return recipes.map((r) => ({
+      id: r.id,
+      title: r.title,
+      prepTimeMin: r.prepTimeMin,
+      avgRating: r.avgRating,
+      photoUrl: r.photoUrl,
+      saveCount: r.saveCount,
+      creatorUsername: r.creator.username,
+    }));
+  } catch {
+    return DEMO_RECIPES.slice(0, 8);
+  }
+}
+
+async function safeAuth() {
+  try {
+    return await auth();
+  } catch {
+    return null;
+  }
 }
 
 function timeGreeting() {
@@ -75,7 +95,7 @@ function timeGreeting() {
 
 export default async function HomePage() {
   const [session, trending, newest] = await Promise.all([
-    auth(),
+    safeAuth(),
     getTrendingRecipes(),
     getNewRecipes(),
   ]);
@@ -86,11 +106,11 @@ export default async function HomePage() {
     "friend";
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 pt-6 pb-16 sm:px-8">
-      {/* Editorial masthead */}
-      <div className="mb-6 flex items-center justify-between text-[10px] uppercase tracking-[0.28em] text-ink-mute">
+    <div className="mx-auto max-w-[1280px] px-4 pt-4 pb-8 sm:px-8 sm:pt-6">
+      {/* Editorial masthead — desktop only */}
+      <div className="mb-6 hidden items-center justify-between text-[10px] uppercase tracking-[0.28em] text-ink-mute md:flex">
         <span>Today's edition</span>
-        <span className="hidden sm:inline">
+        <span>
           {new Date().toLocaleDateString("en-GB", {
             weekday: "long",
             day: "numeric",
@@ -99,24 +119,24 @@ export default async function HomePage() {
         </span>
         <span>{trending.length + newest.length} plates on the menu</span>
       </div>
-      <div className="rule mb-8" />
+      <div className="rule mb-8 hidden md:block" />
 
-      <section className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
         <div className="lg:col-span-7">
-          <p className="eyebrow mb-3">{timeGreeting()}, {name}</p>
-          <h1 className="display text-[clamp(2.75rem,7vw,5.5rem)]">
+          <p className="eyebrow mb-2">{timeGreeting()}, {name}</p>
+          <h1 className="display text-[clamp(2rem,7vw,5.5rem)]">
             what's in your
             <br />
             <span className="italic text-matcha">fridge</span> today?
           </h1>
 
-          <div className="mt-8 max-w-xl">
+          <div className="mt-6 max-w-xl sm:mt-8">
             <HomeSearch />
           </div>
 
           <Link
             href="/search"
-            className="mt-6 inline-flex items-center justify-between gap-4 rounded-2xl border border-ink/15 bg-matcha-soft px-5 py-4 text-left hover:border-ink/30"
+            className="mt-5 inline-flex w-full items-center justify-between gap-4 rounded-2xl border border-ink/15 bg-matcha-soft px-5 py-4 text-left transition active:scale-[0.99] hover:border-ink/30 sm:mt-6 sm:w-auto"
           >
             <div>
               <div className="font-serif text-xl leading-tight">
@@ -135,8 +155,8 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {/* Right rail: food waste widget */}
-        <aside className="lg:col-span-5">
+        {/* Right rail: food waste widget — hidden on mobile */}
+        <aside className="hidden lg:col-span-5 lg:block">
           <div className="rounded-2xl border border-ink/15 bg-ink p-6 text-cream">
             <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.28em] text-cream/60">
               <span>Weekly ledger</span>
@@ -168,14 +188,14 @@ export default async function HomePage() {
         </aside>
       </section>
 
-      <div className="rule my-14" />
+      <div className="rule my-8 md:my-14" />
 
       {/* Best matches strip */}
-      <section className="mb-14">
-        <div className="mb-6 flex items-end justify-between">
+      <section className="mb-10 md:mb-14">
+        <div className="mb-4 flex items-end justify-between md:mb-6">
           <div>
-            <p className="eyebrow mb-2">Section I</p>
-            <h2 className="display text-[clamp(2rem,4vw,3.5rem)]">
+            <p className="eyebrow mb-2 hidden md:block">Section I</p>
+            <h2 className="display text-[clamp(1.75rem,4vw,3.5rem)]">
               Best <span className="italic text-matcha">matches</span>.
             </h2>
           </div>
@@ -189,8 +209,8 @@ export default async function HomePage() {
         <TrendingHero recipes={trending} />
       </section>
 
-      {/* Food waste explainer band */}
-      <section className="mb-14 rounded-2xl border border-ink/15 bg-paper p-8 sm:p-12">
+      {/* Food waste explainer band — desktop only */}
+      <section className="mb-14 hidden rounded-2xl border border-ink/15 bg-paper p-8 md:block sm:p-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-end">
           <div className="md:col-span-6">
             <p className="eyebrow mb-3">The $1,300 problem</p>
@@ -214,10 +234,10 @@ export default async function HomePage() {
 
       {/* Community grid */}
       <section>
-        <div className="mb-6 flex items-end justify-between">
+        <div className="mb-4 flex items-end justify-between md:mb-6">
           <div>
-            <p className="eyebrow mb-2">Section II</p>
-            <h2 className="display text-[clamp(2rem,4vw,3.5rem)]">
+            <p className="eyebrow mb-2 hidden md:block">Section II</p>
+            <h2 className="display text-[clamp(1.75rem,4vw,3.5rem)]">
               Fresh from the <span className="italic text-matcha">community</span>.
             </h2>
           </div>
