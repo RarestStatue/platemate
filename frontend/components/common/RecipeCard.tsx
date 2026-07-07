@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { IconClock, IconStar, IconFlame } from "@tabler/icons-react";
 import clsx from "clsx";
 
@@ -11,8 +12,13 @@ interface RecipeCardProps {
   missingCount?: number;
   isSafe?: boolean;
   isPopular?: boolean;
+  rank?: number;
 }
 
+/**
+ * Editorial recipe card.
+ * Hairline border, tall 4:5 image, tiny caps meta.
+ */
 export default function RecipeCard({
   id,
   title,
@@ -22,25 +28,26 @@ export default function RecipeCard({
   missingCount,
   isSafe,
   isPopular,
+  rank,
 }: RecipeCardProps) {
   let badge: { text: string; className: string } | null = null;
 
   if (isPopular) {
     badge = {
       text: "Popular",
-      className: "bg-red-light text-red-dark",
+      className: "bg-cream text-ink border border-ink/10",
     };
   } else if (isSafe) {
     badge = {
-      text: "Safe",
-      className: "bg-safe-bg text-safe-text",
+      text: "0 missing",
+      className: "bg-matcha text-cream",
     };
   } else if (missingCount !== undefined) {
     badge = {
       text: missingCount === 0 ? "0 missing" : `${missingCount} missing`,
       className:
         missingCount === 0
-          ? "bg-safe-bg text-safe-text"
+          ? "bg-matcha text-cream"
           : "bg-warn-bg text-warn-text",
     };
   }
@@ -48,26 +55,34 @@ export default function RecipeCard({
   return (
     <Link
       href={`/recipe/${id}`}
-      className="block border border-border rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+      className="group block"
     >
-      {/* Image placeholder */}
-      <div className="aspect-[4/3] bg-gray-100 relative">
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-paper">
         {photoUrl ? (
-          <img
+          <Image
             src={photoUrl}
             alt={title}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted">
-            <IconFlame size={32} />
+          <div className="flex h-full w-full items-center justify-center text-ink-mute">
+            <IconFlame size={40} strokeWidth={1.25} />
           </div>
         )}
+
+        {rank !== undefined && (
+          <span className="absolute left-3 top-3 font-serif text-3xl leading-none text-cream mix-blend-difference">
+            №{String(rank).padStart(2, "0")}
+          </span>
+        )}
+
         {badge && (
           <span
             className={clsx(
-              "absolute top-2 right-2 text-xs font-medium px-2 py-0.5 rounded-full",
+              "absolute right-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em]",
               badge.className
             )}
           >
@@ -76,17 +91,18 @@ export default function RecipeCard({
         )}
       </div>
 
-      <div className="p-3">
-        <h3 className="font-semibold text-sm text-foreground line-clamp-1">
+      <div className="mt-3">
+        <h3 className="font-serif text-xl leading-tight text-ink line-clamp-2 transition-colors group-hover:text-matcha">
           {title}
         </h3>
-        <div className="flex items-center gap-2 mt-1 text-xs text-muted">
-          <span className="flex items-center gap-0.5">
-            <IconClock size={14} />
+        <div className="mt-1.5 flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-ink-mute">
+          <span className="inline-flex items-center gap-1">
+            <IconClock size={13} strokeWidth={1.5} />
             {prepTimeMin} min
           </span>
-          <span className="flex items-center gap-0.5">
-            <IconStar size={14} className="text-yellow-500" />
+          <span aria-hidden className="h-3 w-px bg-ink/20" />
+          <span className="inline-flex items-center gap-1">
+            <IconStar size={13} strokeWidth={1.5} className="text-ink" />
             {avgRating.toFixed(1)}
           </span>
         </div>

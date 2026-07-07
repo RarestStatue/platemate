@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { IconUser } from "@tabler/icons-react";
 import RecipeCard from "@/components/common/RecipeCard";
 import clsx from "clsx";
@@ -42,9 +43,11 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
       <div className="flex items-center gap-4 mb-6">
         <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
           {user.profile?.avatarUrl ? (
-            <img
+            <Image
               src={user.profile.avatarUrl}
               alt={user.username}
+              width={64}
+              height={64}
               className="w-full h-full object-cover"
             />
           ) : (

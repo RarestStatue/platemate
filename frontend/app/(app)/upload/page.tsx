@@ -28,7 +28,6 @@ export default function UploadPage() {
   const [error, setError] = useState("");
   const [duplicates, setDuplicates] = useState<DuplicateWarning[]>([]);
   const [createdRecipeId, setCreatedRecipeId] = useState<number | null>(null);
-  const [pendingData, setPendingData] = useState<RecipeUploadInput | null>(null);
 
   const {
     register,
@@ -94,7 +93,6 @@ export default function UploadPage() {
   }
 
   function onSubmit(data: RecipeUploadInput) {
-    setPendingData(data);
     submitRecipe(data);
   }
 

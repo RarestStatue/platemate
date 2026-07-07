@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   IconHeart,
   IconHeartFilled,
@@ -87,12 +88,11 @@ interface RecipeProps {
 export default function RecipeDetailClient({
   recipe,
   isSaved: initialSaved,
-  userRating: initialRating,
+  userRating: _initialRating,
   currentUserId,
 }: RecipeProps) {
   const [saved, setSaved] = useState(initialSaved);
   const [savingState, setSavingState] = useState(false);
-  const [rating, setRating] = useState(initialRating);
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -192,10 +192,13 @@ export default function RecipeDetailClient({
       {/* Hero image */}
       <div className="aspect-video bg-gray-100 relative">
         {recipe.photoUrl ? (
-          <img
+          <Image
             src={recipe.photoUrl}
             alt={recipe.title}
-            className="w-full h-full object-cover"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted text-lg">
