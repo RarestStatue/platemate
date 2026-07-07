@@ -1,5 +1,8 @@
 BEGIN;
 
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('user', 'moderator', 'admin');
+
 -- Trigger function: auto-update updated_at on row changes
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
@@ -15,16 +18,15 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "username" TEXT NOT NULL,
     "password_hash" TEXT NOT NULL,
-    "user_role" TEXT NOT NULL DEFAULT 'user',
+    "user_role" "UserRole" NOT NULL DEFAULT 'user',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "chk_users_email" CHECK ("email" LIKE '%_@_%.__%'),
     CONSTRAINT "chk_users_username" CHECK (length("username") >= 1 AND "username" ~ '^[a-zA-Z0-9_.-]+$'),
-    CONSTRAINT "chk_users_password_hash" CHECK (length("password_hash") >= 20),
-    CONSTRAINT "chk_users_user_role" CHECK ("user_role" IN ('user', 'moderator', 'admin'))
+    CONSTRAINT "chk_users_password_hash" CHECK (length("password_hash") >= 20)
 );
 
 -- CreateTable
@@ -37,7 +39,7 @@ CREATE TABLE "user_profiles" (
     "recipe_count" INTEGER NOT NULL DEFAULT 0,
     "review_count" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("id")
 );
@@ -53,7 +55,7 @@ CREATE TABLE "user_dietary_restrictions" (
     "peanut_free" BOOLEAN NOT NULL DEFAULT false,
     "dairy_free" BOOLEAN NOT NULL DEFAULT false,
     "allergies" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "user_dietary_restrictions_pkey" PRIMARY KEY ("id")
 );
@@ -84,7 +86,7 @@ CREATE TABLE "recipes" (
     "servings" INTEGER NOT NULL DEFAULT 1,
     "photo_url" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     "avg_rating" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "review_count" INTEGER NOT NULL DEFAULT 0,
     "rating_count" INTEGER NOT NULL DEFAULT 0,
@@ -166,7 +168,7 @@ CREATE TABLE "recipe_ratings" (
     "user_id" INTEGER NOT NULL,
     "rating" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "recipe_ratings_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "chk_recipe_ratings_rating" CHECK ("rating" BETWEEN 1 AND 5)
@@ -179,7 +181,7 @@ CREATE TABLE "recipe_reviews" (
     "user_id" INTEGER NOT NULL,
     "text" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "recipe_reviews_pkey" PRIMARY KEY ("id")
 );
@@ -192,7 +194,7 @@ CREATE TABLE "recipe_comments" (
     "text" TEXT NOT NULL,
     "parent_comment_id" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "recipe_comments_pkey" PRIMARY KEY ("id")
 );
@@ -288,6 +290,39 @@ CREATE UNIQUE INDEX "user_follows_follower_id_following_id_key" ON "user_follows
 -- CreateIndex
 CREATE INDEX "recipes_fts_idx" ON "recipes"
     USING GIN (to_tsvector('english', coalesce("title", '') || ' ' || coalesce("description", '')));
+
+-- CreateIndex
+CREATE INDEX "recipe_comments_recipe_id_idx" ON "recipe_comments"("recipe_id");
+
+-- CreateIndex
+CREATE INDEX "recipe_comments_parent_comment_id_idx" ON "recipe_comments"("parent_comment_id");
+
+-- CreateIndex
+CREATE INDEX "recipes_creator_id_idx" ON "recipes"("creator_id");
+
+-- CreateIndex
+CREATE INDEX "recipes_created_at_idx" ON "recipes"("created_at" DESC);
+
+-- CreateIndex
+CREATE INDEX "recipes_avg_rating_idx" ON "recipes"("avg_rating" DESC);
+
+-- CreateIndex
+CREATE INDEX "recipes_save_count_idx" ON "recipes"("save_count" DESC);
+
+-- CreateIndex
+CREATE INDEX "recipes_prep_time_min_idx" ON "recipes"("prep_time_min");
+
+-- CreateIndex
+CREATE INDEX "recipes_last_engagement_at_idx" ON "recipes"("last_engagement_at" DESC);
+
+-- CreateIndex
+CREATE INDEX "shopping_list_items_user_id_idx" ON "shopping_list_items"("user_id");
+
+-- CreateIndex
+CREATE INDEX "user_follows_following_id_idx" ON "user_follows"("following_id");
+
+-- CreateIndex
+CREATE INDEX "user_recipe_saves_recipe_id_idx" ON "user_recipe_saves"("recipe_id");
 
 -- AddForeignKey
 ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -111,16 +111,18 @@ export async function DELETE(request: NextRequest) {
     const userId = parseInt(session.user.id, 10);
 
     await prisma.$transaction(async (tx) => {
-      await tx.userRecipeSave.delete({
-        where: { userId_recipeId: { userId, recipeId } },
+      const deleted = await tx.userRecipeSave.deleteMany({
+        where: { userId, recipeId },
       });
-      await tx.recipe.update({
-        where: { id: recipeId },
-        data: {
-          saveCount: { decrement: 1 },
-          lastEngagementAt: new Date(),
-        },
-      });
+      if (deleted.count > 0) {
+        await tx.recipe.update({
+          where: { id: recipeId },
+          data: {
+            saveCount: { decrement: 1 },
+            lastEngagementAt: new Date(),
+          },
+        });
+      }
     });
 
     return Response.json({ saved: false });

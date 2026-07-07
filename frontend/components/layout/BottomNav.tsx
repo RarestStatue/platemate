@@ -36,6 +36,9 @@ export default function BottomNav() {
     >
       <div className="mx-auto flex max-w-md items-center justify-around gap-1 border-t border-hairline bg-cream/90 px-2 py-1.5 shadow-[0_-2px_20px_-8px_rgba(0,0,0,0.15)] backdrop-blur">
         {NAV_ITEMS.map(({ href, label, icon: Icon, primary }) => {
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-hairline bg-cream/95 backdrop-blur md:hidden">
+      <div className="flex items-center justify-around px-2 py-2">
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive =
             pathname === href || pathname.startsWith(href + "/");
           return (
@@ -70,6 +73,17 @@ export default function BottomNav() {
                     />
                   )}
                 </>
+                "relative flex min-w-[48px] flex-col items-center gap-1 py-1 text-[10px] uppercase tracking-[0.14em] transition-colors",
+                isActive ? "text-ink" : "text-ink-mute"
+              )}
+            >
+              <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
+              <span className={clsx(isActive && "font-medium")}>{label}</span>
+              {isActive && (
+                <span
+                  aria-hidden
+                  className="absolute -top-2 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-matcha"
+                />
               )}
             </Link>
           );

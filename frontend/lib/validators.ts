@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -15,7 +15,7 @@ export const registerSchema = z
         /^[a-zA-Z0-9_.-]+$/,
         "Username can only contain letters, numbers, underscores, dots, and hyphens"
       ),
-    email: z.string().email("Invalid email address"),
+    email: z.email("Invalid email address"),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -66,6 +66,10 @@ export const recipeUploadSchema = z.object({
     .min(1, "At least one step is required"),
 });
 
+export const recipeUpdateSchema = recipeUploadSchema
+  .pick({ title: true, description: true, prepTimeMin: true, servings: true })
+  .partial();
+
 export const reviewSchema = z.object({
   text: z
     .string()
@@ -85,5 +89,6 @@ export const commentSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type RecipeUploadInput = z.infer<typeof recipeUploadSchema>;
+export type RecipeUpdateInput = z.infer<typeof recipeUpdateSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;

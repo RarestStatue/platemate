@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+@theme inline {
   /* Editorial mono palette */
   --color-ink: #0B0B0A;
   --color-ink-soft: #2A2A28;
@@ -313,3 +314,4 @@ body { overscroll-behavior-y: none; }
   .sweep { animation: none; }
   .falling-bill { opacity: 1; }
 }
+.sweep { animation: sweep 3.6s cubic-bezier(0.7, 0, 0.3, 1) infinite; }

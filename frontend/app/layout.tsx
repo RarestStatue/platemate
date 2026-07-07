@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import SessionProvider from "@/components/layout/SessionProvider";
 import "./globals.css";
@@ -63,6 +64,7 @@ export default function RootLayout({
           }}
         />
       </head>
+    >
       <body className="min-h-full flex flex-col grain">
         <SessionProvider>{children}</SessionProvider>
       </body>
