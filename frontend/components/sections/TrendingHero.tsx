@@ -9,12 +9,6 @@ export default function TrendingHero({ recipes }: TrendingHeroProps) {
   if (recipes.length === 0) return null;
 
   return (
-    <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-2 scrollbar-hide sm:mx-0 sm:gap-6 sm:px-0">
-      {recipes.map((recipe, i) => (
-        <div
-          key={recipe.id}
-          className="w-[62vw] min-w-[220px] max-w-[240px] shrink-0 snap-start"
-        >
     <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide">
       {recipes.map((recipe, i) => (
         <div key={recipe.id} className="min-w-[240px] max-w-[240px]">
