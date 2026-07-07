@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { IconSearch, IconAdjustmentsHorizontal, IconX } from "@tabler/icons-react";
 import RecipeCard from "@/components/common/RecipeCard";
 import FilterPanel from "@/components/common/FilterPanel";
@@ -14,7 +14,6 @@ import type {
 
 export default function SearchClient() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const initialQ = searchParams.get("q") || "";
 
   const [query, setQuery] = useState(initialQ);
@@ -51,6 +50,7 @@ export default function SearchClient() {
   }, [query, maxPrepTime, sort, dietaryFilters, ingredients]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch re-runs when search/filter deps change, not a render-then-setState loop
     fetchRecipes();
   }, [fetchRecipes]);
 

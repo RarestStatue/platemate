@@ -17,6 +17,12 @@ const eslintConfig = [
       // Fetch-on-mount via a callback effect is a standard client-fetch pattern here,
       // not the render-time render-then-setState issue this rule targets.
       "react-hooks/set-state-in-effect": "warn",
+      // Destructuring off a field to strip it before sending to the client (e.g.
+      // `const { deletedAt: _deleted, ...rest } = user`) is intentionally unused.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+      ],
     },
   },
 ];

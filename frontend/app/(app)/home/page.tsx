@@ -109,7 +109,7 @@ export default async function HomePage() {
     <div className="mx-auto max-w-[1280px] px-4 pt-4 pb-8 sm:px-8 sm:pt-6">
       {/* Editorial masthead — desktop only */}
       <div className="mb-6 hidden items-center justify-between text-[10px] uppercase tracking-[0.28em] text-ink-mute md:flex">
-        <span>Today's edition</span>
+        <span>Today&apos;s edition</span>
         <span>
           {new Date().toLocaleDateString("en-GB", {
             weekday: "long",
@@ -125,7 +125,7 @@ export default async function HomePage() {
         <div className="lg:col-span-7">
           <p className="eyebrow mb-2">{timeGreeting()}, {name}</p>
           <h1 className="display text-[clamp(2rem,7vw,5.5rem)]">
-            what's in your
+            what&apos;s in your
             <br />
             <span className="italic text-matcha">fridge</span> today?
           </h1>
@@ -220,7 +220,7 @@ export default async function HomePage() {
             </h2>
             <p className="mt-4 max-w-md text-ink-soft">
               The average Canadian household bins $1,300 of edible food every year.
-              Platemate ranks recipes by what's already in your fridge —
+              Platemate ranks recipes by what&apos;s already in your fridge —
               so nothing rots at the back of the drawer.
             </p>
           </div>

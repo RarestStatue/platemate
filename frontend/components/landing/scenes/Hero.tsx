@@ -12,7 +12,6 @@ import {
 } from "motion/react";
 import LogoMark from "../LogoMark";
 import SplitReveal from "../motion/SplitReveal";
-import MagneticButton from "../motion/MagneticButton";
 
 const NAV = [
   { href: "#demo", label: "the demo" },

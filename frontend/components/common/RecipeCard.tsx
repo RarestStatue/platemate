@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { IconClock, IconStar, IconFlame } from "@tabler/icons-react";
 import clsx from "clsx";
 
@@ -58,10 +59,12 @@ export default function RecipeCard({
     >
       <div className="relative aspect-[4/5] w-full overflow-hidden bg-paper">
         {photoUrl ? (
-          <img
+          <Image
             src={photoUrl}
             alt={title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             loading="lazy"
           />
         ) : (

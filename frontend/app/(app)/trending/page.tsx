@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { IconClock, IconStar, IconFlame } from "@tabler/icons-react";
 import type { RecipeCardData } from "@/lib/types";
 
@@ -47,12 +48,14 @@ export default function TrendingPage() {
                 #{index + 1}
               </span>
 
-              <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
+              <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden relative">
                 {recipe.photoUrl ? (
-                  <img
+                  <Image
                     src={recipe.photoUrl}
                     alt={recipe.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="64px"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
