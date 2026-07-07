@@ -14,10 +14,6 @@ const DEMO_RECIPES: RecipeCardData[] = [
   { id: 5, title: "Thai basil eggplant stir-fry", prepTimeMin: 22, avgRating: 4.6, photoUrl: null, saveCount: 178, creatorUsername: "noa", isPopular: true },
   { id: 6, title: "Sheet-pan harissa salmon", prepTimeMin: 28, avgRating: 4.7, photoUrl: null, saveCount: 245, creatorUsername: "ada", isPopular: true },
 ];
-// This page queries recipes directly and lists their ids as links; without
-// this it gets statically frozen at build time and serves stale/deleted
-// recipe ids (404s) until the next `next build`.
-export const revalidate = 60;
 
 async function getTrendingRecipes(): Promise<RecipeCardData[]> {
   try {
@@ -97,19 +93,9 @@ function timeGreeting() {
   return "late night snack?";
 }
 
-function timeGreeting() {
-  const h = new Date().getHours();
-  if (h < 5) return "still up";
-  if (h < 12) return "good morning";
-  if (h < 17) return "good afternoon";
-  if (h < 22) return "good evening";
-  return "late night snack?";
-}
-
 export default async function HomePage() {
   const [session, trending, newest] = await Promise.all([
     safeAuth(),
-    auth(),
     getTrendingRecipes(),
     getNewRecipes(),
   ]);
@@ -125,11 +111,6 @@ export default async function HomePage() {
       <div className="mb-6 hidden items-center justify-between text-[10px] uppercase tracking-[0.28em] text-ink-mute md:flex">
         <span>Today's edition</span>
         <span>
-    <div className="mx-auto max-w-[1280px] px-4 pt-6 pb-16 sm:px-8">
-      {/* Editorial masthead */}
-      <div className="mb-6 flex items-center justify-between text-[10px] uppercase tracking-[0.28em] text-ink-mute">
-        <span>Today's edition</span>
-        <span className="hidden sm:inline">
           {new Date().toLocaleDateString("en-GB", {
             weekday: "long",
             day: "numeric",
@@ -144,26 +125,18 @@ export default async function HomePage() {
         <div className="lg:col-span-7">
           <p className="eyebrow mb-2">{timeGreeting()}, {name}</p>
           <h1 className="display text-[clamp(2rem,7vw,5.5rem)]">
-      <div className="rule mb-8" />
-
-      <section className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <p className="eyebrow mb-3">{timeGreeting()}, {name}</p>
-          <h1 className="display text-[clamp(2.75rem,7vw,5.5rem)]">
             what's in your
             <br />
             <span className="italic text-matcha">fridge</span> today?
           </h1>
 
           <div className="mt-6 max-w-xl sm:mt-8">
-          <div className="mt-8 max-w-xl">
             <HomeSearch />
           </div>
 
           <Link
             href="/search"
             className="mt-5 inline-flex w-full items-center justify-between gap-4 rounded-2xl border border-ink/15 bg-matcha-soft px-5 py-4 text-left transition active:scale-[0.99] hover:border-ink/30 sm:mt-6 sm:w-auto"
-            className="mt-6 inline-flex items-center justify-between gap-4 rounded-2xl border border-ink/15 bg-matcha-soft px-5 py-4 text-left hover:border-ink/30"
           >
             <div>
               <div className="font-serif text-xl leading-tight">
@@ -184,8 +157,6 @@ export default async function HomePage() {
 
         {/* Right rail: food waste widget — hidden on mobile */}
         <aside className="hidden lg:col-span-5 lg:block">
-        {/* Right rail: food waste widget */}
-        <aside className="lg:col-span-5">
           <div className="rounded-2xl border border-ink/15 bg-ink p-6 text-cream">
             <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.28em] text-cream/60">
               <span>Weekly ledger</span>
@@ -225,14 +196,6 @@ export default async function HomePage() {
           <div>
             <p className="eyebrow mb-2 hidden md:block">Section I</p>
             <h2 className="display text-[clamp(1.75rem,4vw,3.5rem)]">
-      <div className="rule my-14" />
-
-      {/* Best matches strip */}
-      <section className="mb-14">
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <p className="eyebrow mb-2">Section I</p>
-            <h2 className="display text-[clamp(2rem,4vw,3.5rem)]">
               Best <span className="italic text-matcha">matches</span>.
             </h2>
           </div>
@@ -248,8 +211,6 @@ export default async function HomePage() {
 
       {/* Food waste explainer band — desktop only */}
       <section className="mb-14 hidden rounded-2xl border border-ink/15 bg-paper p-8 md:block sm:p-12">
-      {/* Food waste explainer band */}
-      <section className="mb-14 rounded-2xl border border-ink/15 bg-paper p-8 sm:p-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-end">
           <div className="md:col-span-6">
             <p className="eyebrow mb-3">The $1,300 problem</p>
@@ -277,10 +238,6 @@ export default async function HomePage() {
           <div>
             <p className="eyebrow mb-2 hidden md:block">Section II</p>
             <h2 className="display text-[clamp(1.75rem,4vw,3.5rem)]">
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <p className="eyebrow mb-2">Section II</p>
-            <h2 className="display text-[clamp(2rem,4vw,3.5rem)]">
               Fresh from the <span className="italic text-matcha">community</span>.
             </h2>
           </div>

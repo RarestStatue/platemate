@@ -13,6 +13,7 @@ services:
       - "no-new-privileges:true"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./frontend/prisma/migrations/20260628190629_init/migration.sql:/docker-entrypoint-initdb.d/init.sql:ro,z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platemate} -d ${POSTGRES_DB:-platemate}"]
       interval: 10s

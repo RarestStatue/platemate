@@ -51,10 +51,8 @@ export default async function ProfilePage({
   if (!user || user.deletedAt) notFound();
   if (user.profile && !user.profile.isPublic) notFound();
 
-  // SECURITY: strip internal deletedAt field before sending to the client
-  const { deletedAt: _deleted, ...publicUser } = user;
   const serialized = {
-    ...publicUser,
+    ...user,
     createdAt: user.createdAt.toISOString(),
     recipes: user.recipes.map((r) => ({
       ...r,

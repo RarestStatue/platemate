@@ -15,9 +15,6 @@ export default function TrendingHero({ recipes }: TrendingHeroProps) {
           key={recipe.id}
           className="w-[62vw] min-w-[220px] max-w-[240px] shrink-0 snap-start"
         >
-    <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide">
-      {recipes.map((recipe, i) => (
-        <div key={recipe.id} className="min-w-[240px] max-w-[240px]">
           <RecipeCard
             id={recipe.id}
             title={recipe.title}

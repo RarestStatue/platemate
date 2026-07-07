@@ -2,17 +2,9 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { registerSchema } from "@/lib/validators";
-import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
-    // SECURITY: throttle account creation per-IP
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const allowed = await rateLimit(`register:${ip}`, 5, 60);
-    if (!allowed) {
-      return Response.json({ error: "Too many requests, please try again later" }, { status: 429 });
-    }
-
     const body = await request.json();
 
     // SECURITY: Validate all inputs with Zod

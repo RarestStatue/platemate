@@ -76,16 +76,11 @@ export async function GET(request: NextRequest) {
         orderBy = [{ createdAt: "desc" }, { id: "desc" }];
     }
 
-    const cursorId = cursor ? parseInt(cursor, 10) : null;
-    if (cursor && (cursorId === null || isNaN(cursorId))) {
-      return Response.json({ error: "Invalid cursor" }, { status: 400 });
-    }
-
     const recipes = await prisma.recipe.findMany({
       where,
       orderBy,
       take: PAGE_SIZE + 1,
-      ...(cursorId !== null ? { skip: 1, cursor: { id: cursorId } } : {}),
+      ...(cursor ? { skip: 1, cursor: { id: parseInt(cursor, 10) } } : {}),
       select: {
         id: true,
         title: true,
@@ -151,47 +146,34 @@ export async function POST(request: NextRequest) {
 
     // Create recipe in transaction
     const recipe = await prisma.$transaction(async (tx) => {
-      // Normalize and upsert ingredients first. Interactive transactions do
-      // not support concurrent operations, so this must be sequential. Also
-      // merge repeated ingredient names in the same payload into a single
-      // row: RecipeIngredient has a @@unique([recipeId, ingredientId])
-      // constraint, so two rows with the same ingredient would violate it.
-      const byIngredientName = new Map<
-        string,
-        { ingredientId: number; quantity: number; unit: string; notes: string | null }
-      >();
-      for (const ing of ingredients) {
-        const normalizedName = ing.ingredient
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, " ");
+      // Normalize and upsert ingredients first
+      const normalizedIngredients = await Promise.all(
+        ingredients.map(async (ing) => {
+          const normalizedName = ing.ingredient
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " ");
 
-        const existing = byIngredientName.get(normalizedName);
-        if (existing) {
-          existing.quantity += ing.quantity;
-          continue;
-        }
+          const ingredient = await tx.ingredient.upsert({
+            where: {
+              name: normalizedName,
+            },
+            update: {},
+            create: {
+              name: normalizedName,
+              displayName: ing.ingredient.trim(),
+              defaultUnit: ing.unit,
+            },
+          });
 
-        const ingredient = await tx.ingredient.upsert({
-          where: {
-            name: normalizedName,
-          },
-          update: {},
-          create: {
-            name: normalizedName,
-            displayName: ing.ingredient.trim(),
-            defaultUnit: ing.unit,
-          },
-        });
-
-        byIngredientName.set(normalizedName, {
-          ingredientId: ingredient.id,
-          quantity: ing.quantity,
-          unit: ing.unit,
-          notes: ing.notes || null,
-        });
-      }
-      const normalizedIngredients = Array.from(byIngredientName.values());
+          return {
+            ingredientId: ingredient.id,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            notes: ing.notes || null,
+          };
+        })
+      );
 
       const newRecipe = await tx.recipe.create({
         data: {

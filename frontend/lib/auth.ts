@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { rateLimit } from "@/lib/rate-limit";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -18,12 +17,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const email = String(credentials.email).toLowerCase().trim();
         const password = String(credentials.password);
-
-        // SECURITY: throttle login attempts per email to slow credential stuffing
-        const allowed = await rateLimit(`login:${email}`, 5, 60);
-        if (!allowed) {
-          return null;
-        }
 
         let user;
         try {
@@ -73,36 +66,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id!;
-        token.username = user.name ?? "";
-        token.role = user.role;
-        token.checkedAt = Date.now();
-        return token;
+        token.id = user.id;
+        token.username = user.name;
+        token.role = (user as unknown as Record<string, unknown>).role as string;
       }
-
-      // SECURITY: re-verify the user still exists/is active every 15 min so
-      // deletion or a role change takes effect without waiting out the 7-day session.
-      const checkedAt = token.checkedAt ?? 0;
-      if (Date.now() - checkedAt > 15 * 60 * 1000) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: parseInt(token.id, 10) },
-          select: { deletedAt: true, userRole: true },
-        });
-
-        if (!dbUser || dbUser.deletedAt) {
-          return null;
-        }
-
-        token.role = dbUser.userRole;
-        token.checkedAt = Date.now();
-      }
-
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id;
-      session.user.name = token.username;
-      session.user.role = token.role;
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.name = token.username as string;
+        (session.user as unknown as Record<string, unknown>).role = token.role;
+      }
       return session;
     },
   },
