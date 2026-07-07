@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+@theme {
 @theme inline {
   /* Editorial mono palette */
   --color-ink: #0B0B0A;
@@ -37,6 +38,92 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Dark mode: swap semantic tokens. Utilities using --color-* auto-update. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Dark palette — warm editorial charcoal.
+ * Design intent: layered warm off-blacks (never #000), soft off-white type
+ * (never #fff), tuned matcha + ember for legibility. Elevation increases
+ * with each surface: cream (base) → paper → white → paper-warm.
+ */
+.dark {
+  --color-ink: #ECE4D2;
+  --color-ink-soft: #C7BFAB;
+  --color-ink-mute: #8E877A;
+  --color-hairline: #33302A;
+  --color-paper: #23201B;
+  --color-paper-warm: #2A2620;
+  --color-cream: #1B1A17;
+  --color-white: #26221C;
+
+  --color-matcha: #A9C7A2;
+  --color-matcha-soft: #2F3D2F;
+  --color-ember: #E58966;
+
+  --color-red: var(--color-ink);
+  --color-red-light: var(--color-paper-warm);
+  --color-red-mid: var(--color-ink-mute);
+  --color-red-border: var(--color-hairline);
+  --color-red-dark: var(--color-ink);
+  --color-red-darker: var(--color-ink);
+  --color-warn-bg: #3A2E12;
+  --color-warn-text: #E9C878;
+  --color-safe-bg: var(--color-matcha-soft);
+  --color-safe-text: var(--color-matcha);
+  --color-background: var(--color-cream);
+  --color-foreground: var(--color-ink);
+  --color-muted: var(--color-ink-mute);
+  --color-border: var(--color-hairline);
+
+  color-scheme: dark;
+}
+
+/* Theme transition burst — enabled briefly during toggle only,
+   so hover/focus states stay snappy the rest of the time. */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition:
+    background-color 320ms ease,
+    color 320ms ease,
+    border-color 320ms ease,
+    fill 320ms ease,
+    stroke 320ms ease,
+    box-shadow 320ms ease !important;
+}
+
+
+/* Circular theme reveal — new snapshot clips from click origin outward.
+   Direction-agnostic: same keyframe both ways because new is always the
+   incoming theme. Coordinates come from CSS vars set by ThemeToggle. */
+@keyframes theme-reveal {
+  from { clip-path: circle(0px at var(--tt-x, 50%) var(--tt-y, 50%)); }
+  to   { clip-path: circle(var(--tt-r, 150vmax) at var(--tt-x, 50%) var(--tt-y, 50%)); }
+}
+::view-transition-old(root) {
+  animation: none;
+  z-index: 1;
+}
+::view-transition-new(root) {
+  animation: theme-reveal 520ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  mix-blend-mode: normal;
+  z-index: 2;
+}
+
+/* Softer selection in dark */
+.dark ::selection {
+  background: var(--color-matcha);
+  color: var(--color-cream);
+}
+
+/* Grain looks bad on dark (multiply darkens further) — flip to screen + lighter */
+.dark .grain::before {
+  mix-blend-mode: screen;
+  opacity: 0.06;
+}
+
 @layer base {
   html {
     background: var(--color-cream);
@@ -44,6 +131,7 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   body {
@@ -81,6 +169,7 @@
     background: var(--color-ink);
     opacity: 0.9;
   }
+  .dark .rule { opacity: 0.35; }
 
   .hairline {
     height: 1px;
@@ -123,11 +212,106 @@
 }
 .floaty { animation: floaty 6s ease-in-out infinite; }
 
+/* Theme toggle icon swap */
+@keyframes themeicon {
+  0% { transform: rotate(-90deg) scale(0.6); opacity: 0; }
+  100% { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+/* Bottom sheet slide-up */
+@keyframes slideup {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slideup { animation: slideup 0.25s ease-out; }
+
+/* Safe-area helpers for standalone PWA on iOS/Android */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pl-safe { padding-left: env(safe-area-inset-left); }
+.pr-safe { padding-right: env(safe-area-inset-right); }
+.mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+
+/* Prevent tap flash + long-press callout on iOS install */
+html, body { -webkit-tap-highlight-color: transparent; }
+body { overscroll-behavior-y: none; }
+
 /* Ticker underline sweep */
 @keyframes sweep {
   0% { transform: scaleX(0); transform-origin: left; }
   55% { transform: scaleX(1); transform-origin: left; }
   56% { transform-origin: right; }
   100% { transform: scaleX(0); transform-origin: right; }
+}
+.sweep { animation: sweep 3.6s cubic-bezier(0.7, 0, 0.3, 1) infinite; }
+
+/* ────────────────────────────────────────────────
+   Landing scrollytelling helpers
+   ──────────────────────────────────────────────── */
+
+/* Reading progress bar (top of viewport, scaleX from 0..1) */
+.scroll-progress-fill {
+  transform-origin: left center;
+  will-change: transform;
+}
+
+/* Hero display type: each char wrapped in .hero-char, hidden before GSAP kicks in */
+.hero-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(1em);
+  will-change: transform, opacity;
+}
+.hero-line { display: block; overflow: hidden; padding-bottom: 0.05em; }
+
+/* Elements GSAP will fade-in on scroll — initial hidden to avoid FOUC */
+.will-anim {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Kinetic type stage */
+.kt-stage {
+  perspective: 1200px;
+}
+.kt-word {
+  font-variant-ligatures: none;
+  letter-spacing: -0.06em;
+}
+
+/* Plate assembly: base ingredient state */
+.pa-item {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.pa-label { will-change: transform, opacity; }
+
+/* Steam draw-in path: dashed then filled via GSAP */
+.steam-path {
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+}
+
+/* Ingredient river bob wrapper — inner span floats independently of scroll */
+.river-item {
+  will-change: transform;
+}
+
+/* Falling bills initial */
+.falling-bill {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* When user prefers reduced motion, neutralise setups so content is legible */
+@media (prefers-reduced-motion: reduce) {
+  .hero-char { opacity: 1; transform: none; }
+  .will-anim { opacity: 1; }
+  .pa-item, .pa-label { opacity: 1; }
+  .steam-path { stroke-dashoffset: 0; }
+  .marquee-track { animation: none; }
+  .floaty { animation: none; }
+  .sweep { animation: none; }
+  .falling-bill { opacity: 1; }
 }
 .sweep { animation: sweep 3.6s cubic-bezier(0.7, 0, 0.3, 1) infinite; }

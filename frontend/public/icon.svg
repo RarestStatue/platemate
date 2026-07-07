@@ -1,0 +1,12 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#0B0B0A"/>
+  <!-- Pot body -->
+  <path d="M128 230h256l-18 154a26 26 0 0 1-26 23H172a26 26 0 0 1-26-23L128 230z" fill="#F6F3EC"/>
+  <!-- Handles -->
+  <rect x="77" y="236" width="58" height="26" rx="13" fill="#F6F3EC"/>
+  <rect x="377" y="236" width="58" height="26" rx="13" fill="#F6F3EC"/>
+  <!-- Steam -->
+  <path d="M217 103c-19 26 19 38 0 64M295 77c-19 26 19 38 0 64" stroke="#3B5A3F" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <!-- Leaf mark -->
+  <circle cx="256" cy="314" r="26" fill="#3B5A3F"/>
+</svg>
