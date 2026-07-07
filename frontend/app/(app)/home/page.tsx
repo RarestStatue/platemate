@@ -7,12 +7,12 @@ import HomeSearch from "./HomeSearch";
 import type { RecipeCardData } from "@/lib/types";
 
 const DEMO_RECIPES: RecipeCardData[] = [
-  { id: "d1", title: "Miso butter mushrooms on toast", prepTimeMin: 15, avgRating: 4.7, photoUrl: null, saveCount: 214, creatorUsername: "hanako", isPopular: true },
-  { id: "d2", title: "One-pan lemon chicken orzo", prepTimeMin: 25, avgRating: 4.6, photoUrl: null, saveCount: 189, creatorUsername: "mateo", isPopular: true },
-  { id: "d3", title: "Feta & spinach shakshuka", prepTimeMin: 20, avgRating: 4.8, photoUrl: null, saveCount: 302, creatorUsername: "priya", isPopular: true },
-  { id: "d4", title: "Crispy gnocchi with peas", prepTimeMin: 18, avgRating: 4.5, photoUrl: null, saveCount: 156, creatorUsername: "luca", isPopular: true },
-  { id: "d5", title: "Thai basil eggplant stir-fry", prepTimeMin: 22, avgRating: 4.6, photoUrl: null, saveCount: 178, creatorUsername: "noa", isPopular: true },
-  { id: "d6", title: "Sheet-pan harissa salmon", prepTimeMin: 28, avgRating: 4.7, photoUrl: null, saveCount: 245, creatorUsername: "ada", isPopular: true },
+  { id: 1, title: "Miso butter mushrooms on toast", prepTimeMin: 15, avgRating: 4.7, photoUrl: null, saveCount: 214, creatorUsername: "hanako", isPopular: true },
+  { id: 2, title: "One-pan lemon chicken orzo", prepTimeMin: 25, avgRating: 4.6, photoUrl: null, saveCount: 189, creatorUsername: "mateo", isPopular: true },
+  { id: 3, title: "Feta & spinach shakshuka", prepTimeMin: 20, avgRating: 4.8, photoUrl: null, saveCount: 302, creatorUsername: "priya", isPopular: true },
+  { id: 4, title: "Crispy gnocchi with peas", prepTimeMin: 18, avgRating: 4.5, photoUrl: null, saveCount: 156, creatorUsername: "luca", isPopular: true },
+  { id: 5, title: "Thai basil eggplant stir-fry", prepTimeMin: 22, avgRating: 4.6, photoUrl: null, saveCount: 178, creatorUsername: "noa", isPopular: true },
+  { id: 6, title: "Sheet-pan harissa salmon", prepTimeMin: 28, avgRating: 4.7, photoUrl: null, saveCount: 245, creatorUsername: "ada", isPopular: true },
 ];
 
 async function getTrendingRecipes(): Promise<RecipeCardData[]> {
