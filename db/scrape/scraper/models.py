@@ -27,6 +27,12 @@ class ParsedAllergens(BaseModel):
     has_eggs: bool = False
 
 
+class ParsedDietary(BaseModel):
+    is_vegetarian: bool = False
+    is_vegan: bool = False
+    is_halal: bool = False
+
+
 class ParsedRecipe(BaseModel):
     is_recipe: bool
     title: str | None = Field(default=None, max_length=200)
@@ -36,6 +42,7 @@ class ParsedRecipe(BaseModel):
     ingredients: list[ParsedIngredient] = Field(default_factory=list)
     steps: list[ParsedStep] = Field(default_factory=list)
     allergens: ParsedAllergens = Field(default_factory=ParsedAllergens)
+    dietary: ParsedDietary = Field(default_factory=ParsedDietary)
 
 
 class StoreResult(Enum):

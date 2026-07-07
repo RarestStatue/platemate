@@ -134,14 +134,17 @@ def store_recipe(
                 """INSERT INTO recipes
                    (creator_id, title, description, prep_time_min, servings,
                     has_peanuts, has_tree_nuts, has_shellfish, has_dairy, has_gluten, has_eggs,
+                    is_vegetarian, is_vegan, is_halal,
                     updated_at)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                    RETURNING id""",
                 (
                     creator_id, recipe.title[:200], description, prep_time, servings,
                     recipe.allergens.has_peanuts, recipe.allergens.has_tree_nuts,
                     recipe.allergens.has_shellfish, recipe.allergens.has_dairy,
                     recipe.allergens.has_gluten, recipe.allergens.has_eggs,
+                    recipe.dietary.is_vegetarian, recipe.dietary.is_vegan,
+                    recipe.dietary.is_halal,
                 ),
             )
             recipe_id = cur.fetchone()[0]  # type: ignore[index]

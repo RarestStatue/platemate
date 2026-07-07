@@ -124,6 +124,10 @@ model Recipe {
   hasGluten    Boolean @default(false) @map("has_gluten")
   hasEggs      Boolean @default(false) @map("has_eggs")
 
+  isVegetarian Boolean @default(false) @map("is_vegetarian")
+  isVegan      Boolean @default(false) @map("is_vegan")
+  isHalal      Boolean @default(false) @map("is_halal")
+
   creator             User                  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   ingredients         RecipeIngredient[]
   steps               RecipeStep[]

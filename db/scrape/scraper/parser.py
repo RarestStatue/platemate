@@ -22,6 +22,10 @@ Rules:
 - Ingredient names lowercase, singular, no quantities or adjectives that
   don't change the ingredient ("chopped onion" → "onion").
 - allergens: mark true only if an ingredient clearly contains it.
+- dietary: mark true only if the recipe clearly qualifies. is_vegetarian: no
+  meat, poultry, or fish. is_vegan: vegetarian and also no dairy, eggs, honey,
+  or other animal products. is_halal: no pork, no alcohol, and no ambiguous
+  meat (meat only if explicitly halal). When in doubt, leave false.
 - prep_time_min: total minutes; estimate from steps if unstated; null if no basis.
 
 JSON Schema:
@@ -40,6 +44,9 @@ JSON Schema:
   "allergens": {
     "has_peanuts": false, "has_tree_nuts": false, "has_shellfish": false,
     "has_dairy": false, "has_gluten": false, "has_eggs": false
+  },
+  "dietary": {
+    "is_vegetarian": false, "is_vegan": false, "is_halal": false
   }
 }"""
 

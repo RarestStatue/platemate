@@ -99,6 +99,9 @@ CREATE TABLE "recipes" (
     "has_dairy" BOOLEAN NOT NULL DEFAULT false,
     "has_gluten" BOOLEAN NOT NULL DEFAULT false,
     "has_eggs" BOOLEAN NOT NULL DEFAULT false,
+    "is_vegetarian" BOOLEAN NOT NULL DEFAULT false,
+    "is_vegan" BOOLEAN NOT NULL DEFAULT false,
+    "is_halal" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "recipes_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "chk_recipes_prep_time_min" CHECK ("prep_time_min" >= 0),

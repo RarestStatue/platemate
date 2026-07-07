@@ -16,10 +16,9 @@ export async function GET(request: NextRequest) {
     const glutenFree = searchParams.get("glutenFree") === "true";
     const peanutFree = searchParams.get("peanutFree") === "true";
     const dairyFree = searchParams.get("dairyFree") === "true";
-    // Dietary filters: Future
-    //const vegetarian = searchParams.get("vegetarian") === "true";
-    //const vegan = searchParams.get("vegan") === "true";
-    //const halal = searchParams.get("halal") === "true";
+    const vegetarian = searchParams.get("vegetarian") === "true";
+    const vegan = searchParams.get("vegan") === "true";
+    const halal = searchParams.get("halal") === "true";
 
     // Build WHERE clause
     const where: Prisma.RecipeWhereInput = {};
@@ -58,6 +57,11 @@ export async function GET(request: NextRequest) {
     if (peanutFree) where.hasPeanuts = false;
     if (dairyFree) where.hasDairy = false;
     if (glutenFree) where.hasGluten = false;
+
+    // Dietary filters: require positive recipe attribute
+    if (vegetarian) where.isVegetarian = true;
+    if (vegan) where.isVegan = true;
+    if (halal) where.isHalal = true;
 
     // Sort: always include a secondary `id` sort so cursor-based pagination is
     // stable and unambiguous regardless of which field is the primary sort.
