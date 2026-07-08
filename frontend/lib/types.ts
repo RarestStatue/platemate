@@ -14,6 +14,7 @@ export interface RecipeCardData {
   saveCount: number;
   creatorUsername: string;
   missingCount?: number;
+  matchCount?: number;
   isSafe?: boolean;
   isPopular?: boolean;
 }

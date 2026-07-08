@@ -38,21 +38,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Ingredient filters
-    if (selectedIngredients.length > 0) {
-      where.ingredients = {
-        some: {
-          ingredient: {
-            name: {
-              in: selectedIngredients.map((i) =>
-                i.trim().toLowerCase().replace(/\s+/g, " ")
-              ),
-            },
-          },
-        },
-      };
-    }
-
     // Dietary filters: exclude recipes with allergens
     if (peanutFree) where.hasPeanuts = false;
     if (dairyFree) where.hasDairy = false;
@@ -78,6 +63,113 @@ export async function GET(request: NextRequest) {
         break;
       default:
         orderBy = [{ createdAt: "desc" }, { id: "desc" }];
+    }
+
+    // Ingredient-match prioritization: recipes matching more of the
+    // selected ingredients rank above recipes matching fewer. Prisma's
+    // relation orderBy only counts ALL related rows, not a filtered
+    // subset, so the match count has to be computed with raw SQL.
+    if (selectedIngredients.length > 0) {
+      const normalizedNames = selectedIngredients.map((i) =>
+        i.trim().toLowerCase().replace(/\s+/g, " ")
+      );
+
+      const conditions: Prisma.Sql[] = [];
+      if (q) {
+        const pattern = `%${q}%`;
+        conditions.push(
+          Prisma.sql`(r.title ILIKE ${pattern} OR r.description ILIKE ${pattern})`
+        );
+      }
+      if (maxPrepTime) {
+        const parsed = parseInt(maxPrepTime, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          conditions.push(Prisma.sql`r.prep_time_min <= ${parsed}`);
+        }
+      }
+      if (peanutFree) conditions.push(Prisma.sql`r.has_peanuts = false`);
+      if (dairyFree) conditions.push(Prisma.sql`r.has_dairy = false`);
+      if (glutenFree) conditions.push(Prisma.sql`r.has_gluten = false`);
+      if (vegetarian) conditions.push(Prisma.sql`r.is_vegetarian = true`);
+      if (vegan) conditions.push(Prisma.sql`r.is_vegan = true`);
+      if (halal) conditions.push(Prisma.sql`r.is_halal = true`);
+
+      const whereSql =
+        conditions.length > 0 ? Prisma.join(conditions, " AND ") : Prisma.sql`TRUE`;
+
+      let secondarySort: Prisma.Sql;
+      switch (sort) {
+        case "rating":
+          secondarySort = Prisma.sql`r.avg_rating DESC`;
+          break;
+        case "prep_time":
+          secondarySort = Prisma.sql`r.prep_time_min ASC`;
+          break;
+        case "popular":
+          secondarySort = Prisma.sql`r.save_count DESC`;
+          break;
+        default:
+          secondarySort = Prisma.sql`r.created_at DESC`;
+      }
+
+      // Cursor here is an offset (not a recipe id) since ordering is by a
+      // computed match count rather than a stable indexed column.
+      const offset = cursor ? parseInt(cursor, 10) : 0;
+      if (cursor && (isNaN(offset) || offset < 0)) {
+        return Response.json({ error: "Invalid cursor" }, { status: 400 });
+      }
+
+      const rows = await prisma.$queryRaw<
+        Array<{
+          id: number;
+          title: string;
+          prepTimeMin: number;
+          avgRating: number;
+          photoUrl: string | null;
+          saveCount: number;
+          creatorUsername: string;
+          matchCount: number;
+        }>
+      >(Prisma.sql`
+        SELECT
+          r.id,
+          r.title,
+          r.prep_time_min AS "prepTimeMin",
+          r.avg_rating AS "avgRating",
+          r.photo_url AS "photoUrl",
+          r.save_count AS "saveCount",
+          u.username AS "creatorUsername",
+          COUNT(DISTINCT ri.ingredient_id)::int AS "matchCount"
+        FROM recipes r
+        JOIN users u ON u.id = r.creator_id
+        LEFT JOIN recipe_ingredients ri ON ri.recipe_id = r.id
+          AND ri.ingredient_id IN (
+            SELECT id FROM ingredients WHERE name IN (${Prisma.join(normalizedNames)})
+          )
+        WHERE ${whereSql}
+        GROUP BY r.id, u.username
+        HAVING COUNT(DISTINCT ri.ingredient_id) > 0
+        ORDER BY "matchCount" DESC, ${secondarySort}, r.id DESC
+        LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
+      `);
+
+      const hasMore = rows.length > PAGE_SIZE;
+      const items = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+      const nextCursor = hasMore ? String(offset + PAGE_SIZE) : null;
+
+      return Response.json({
+        recipes: items.map((r) => ({
+          id: r.id,
+          title: r.title,
+          prepTimeMin: r.prepTimeMin,
+          avgRating: r.avgRating,
+          photoUrl: r.photoUrl,
+          saveCount: r.saveCount,
+          creatorUsername: r.creatorUsername,
+          matchCount: r.matchCount,
+        })),
+        nextCursor,
+      });
     }
 
     const cursorId = cursor ? parseInt(cursor, 10) : null;
