@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IconSalad } from "@tabler/icons-react";
@@ -40,7 +41,18 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/login?registered=true");
+      const signInResult = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        router.push("/login?registered=true");
+        return;
+      }
+
+      router.push("/home");
     } catch {
       setError("An unexpected error occurred");
       setLoading(false);
