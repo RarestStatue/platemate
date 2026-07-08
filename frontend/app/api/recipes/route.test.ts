@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 const findManyMock = vi.fn();
+const queryRawMock = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     recipe: {
       findMany: (...args: unknown[]) => findManyMock(...args),
     },
+    $queryRaw: (...args: unknown[]) => queryRawMock(...args),
   },
 }));
 
@@ -25,6 +27,8 @@ function req(qs: string) {
 beforeEach(() => {
   findManyMock.mockReset();
   findManyMock.mockResolvedValue([]);
+  queryRawMock.mockReset();
+  queryRawMock.mockResolvedValue([]);
 });
 
 describe("GET /api/recipes", () => {
@@ -62,13 +66,15 @@ describe("GET /api/recipes", () => {
     expect(call.where.prepTimeMin).toEqual({ lte: 30 });
   });
 
-  it("builds a case-insensitive OR search on title/description", async () => {
-    await GET(req("?q=pasta"));
-    const call = findManyMock.mock.calls[0][0];
-    expect(call.where.OR).toEqual([
-      { title: { contains: "pasta", mode: "insensitive" } },
-      { description: { contains: "pasta", mode: "insensitive" } },
-    ]);
+  it("builds a case-insensitive ILIKE search on title/description via raw SQL", async () => {
+    const res = await GET(req("?q=pasta"));
+    expect(res.status).toBe(200);
+    expect(findManyMock).not.toHaveBeenCalled();
+    const call = queryRawMock.mock.calls[0][0];
+    expect(call.text).toContain("ILIKE");
+    expect(call.text).toContain("r.title");
+    expect(call.text).toContain("r.description");
+    expect(call.values).toContain("%pasta%");
   });
 
   it("always includes a secondary id sort for stable pagination", async () => {
