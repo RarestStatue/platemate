@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { recipeUploadSchema } from "@/lib/validators";
 import { PAGE_SIZE } from "@/lib/constants";
 import { Prisma } from "@prisma/client";
+import { getAllergens } from "@/lib/allergens";
 
 export async function GET(request: NextRequest) {
   try {
@@ -191,6 +192,12 @@ export async function GET(request: NextRequest) {
           saveCount: number;
           creatorUsername: string;
           matchCount: number;
+          hasPeanuts: boolean;
+          hasTreeNuts: boolean;
+          hasShellfish: boolean;
+          hasDairy: boolean;
+          hasGluten: boolean;
+          hasEggs: boolean;
         }>
       >(Prisma.sql`
         SELECT
@@ -201,6 +208,12 @@ export async function GET(request: NextRequest) {
           r.photo_url AS "photoUrl",
           r.save_count AS "saveCount",
           u.username AS "creatorUsername",
+          r.has_peanuts AS "hasPeanuts",
+          r.has_tree_nuts AS "hasTreeNuts",
+          r.has_shellfish AS "hasShellfish",
+          r.has_dairy AS "hasDairy",
+          r.has_gluten AS "hasGluten",
+          r.has_eggs AS "hasEggs",
           COUNT(DISTINCT ri.ingredient_id)::int AS "matchCount"
         FROM recipes r
         JOIN users u ON u.id = r.creator_id
@@ -229,6 +242,7 @@ export async function GET(request: NextRequest) {
           saveCount: r.saveCount,
           creatorUsername: r.creatorUsername,
           matchCount: r.matchCount,
+          allergens: getAllergens(r),
         })),
         nextCursor,
       });
@@ -257,6 +271,12 @@ export async function GET(request: NextRequest) {
           photoUrl: string | null;
           saveCount: number;
           creatorUsername: string;
+          hasPeanuts: boolean;
+          hasTreeNuts: boolean;
+          hasShellfish: boolean;
+          hasDairy: boolean;
+          hasGluten: boolean;
+          hasEggs: boolean;
         }>
       >(Prisma.sql`
         SELECT
@@ -266,7 +286,13 @@ export async function GET(request: NextRequest) {
           r.avg_rating AS "avgRating",
           r.photo_url AS "photoUrl",
           r.save_count AS "saveCount",
-          u.username AS "creatorUsername"
+          u.username AS "creatorUsername",
+          r.has_peanuts AS "hasPeanuts",
+          r.has_tree_nuts AS "hasTreeNuts",
+          r.has_shellfish AS "hasShellfish",
+          r.has_dairy AS "hasDairy",
+          r.has_gluten AS "hasGluten",
+          r.has_eggs AS "hasEggs"
         FROM recipes r
         JOIN users u ON u.id = r.creator_id
         WHERE ${whereSql}
@@ -287,6 +313,7 @@ export async function GET(request: NextRequest) {
           photoUrl: r.photoUrl,
           saveCount: r.saveCount,
           creatorUsername: r.creatorUsername,
+          allergens: getAllergens(r),
         })),
         nextCursor,
       });
@@ -310,6 +337,12 @@ export async function GET(request: NextRequest) {
         photoUrl: true,
         saveCount: true,
         creator: { select: { username: true } },
+        hasPeanuts: true,
+        hasTreeNuts: true,
+        hasShellfish: true,
+        hasDairy: true,
+        hasGluten: true,
+        hasEggs: true,
       },
     });
 
@@ -326,6 +359,7 @@ export async function GET(request: NextRequest) {
         photoUrl: r.photoUrl,
         saveCount: r.saveCount,
         creatorUsername: r.creator.username,
+        allergens: getAllergens(r),
       })),
       nextCursor,
     });

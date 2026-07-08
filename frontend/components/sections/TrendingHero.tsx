@@ -23,6 +23,7 @@ export default function TrendingHero({ recipes }: TrendingHeroProps) {
             photoUrl={recipe.photoUrl}
             isPopular={recipe.isPopular}
             rank={i + 1}
+            allergens={recipe.allergens}
           />
         </div>
       ))}

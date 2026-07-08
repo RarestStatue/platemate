@@ -174,6 +174,7 @@ export default function SearchClient() {
                   avgRating={recipe.avgRating}
                   photoUrl={recipe.photoUrl}
                   missingCount={recipe.missingCount}
+                  allergens={recipe.allergens}
                 />
               ))}
             </div>

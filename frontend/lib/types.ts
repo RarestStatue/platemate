@@ -17,6 +17,7 @@ export interface RecipeCardData {
   matchCount?: number;
   isSafe?: boolean;
   isPopular?: boolean;
+  allergens?: string[];
 }
 
 export interface RecipeDetail {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProfileClient from "./ProfileClient";
+import { getAllergens } from "@/lib/allergens";
 
 export default async function ProfilePage({
   params,
@@ -35,6 +36,12 @@ export default async function ProfilePage({
           avgRating: true,
           photoUrl: true,
           saveCount: true,
+          hasPeanuts: true,
+          hasTreeNuts: true,
+          hasShellfish: true,
+          hasDairy: true,
+          hasGluten: true,
+          hasEggs: true,
         },
       },
       reviews: {
@@ -56,10 +63,22 @@ export default async function ProfilePage({
   const serialized = {
     ...publicUser,
     createdAt: user.createdAt.toISOString(),
-    recipes: user.recipes.map((r) => ({
-      ...r,
-      creatorUsername: user.username,
-    })),
+    recipes: user.recipes.map((r) => {
+      const {
+        hasPeanuts: _hasPeanuts,
+        hasTreeNuts: _hasTreeNuts,
+        hasShellfish: _hasShellfish,
+        hasDairy: _hasDairy,
+        hasGluten: _hasGluten,
+        hasEggs: _hasEggs,
+        ...rest
+      } = r;
+      return {
+        ...rest,
+        creatorUsername: user.username,
+        allergens: getAllergens(r),
+      };
+    }),
     reviews: user.reviews.map((r) => ({
       ...r,
       createdAt: r.createdAt.toISOString(),

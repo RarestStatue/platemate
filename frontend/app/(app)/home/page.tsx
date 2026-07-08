@@ -5,6 +5,7 @@ import TrendingHero from "@/components/sections/TrendingHero";
 import NewFromCommunity from "@/components/sections/NewFromCommunity";
 import HomeSearch from "./HomeSearch";
 import type { RecipeCardData } from "@/lib/types";
+import { getAllergens } from "@/lib/allergens";
 
 const DEMO_RECIPES: RecipeCardData[] = [
   { id: 1, title: "Miso butter mushrooms on toast", prepTimeMin: 15, avgRating: 4.7, photoUrl: null, saveCount: 214, creatorUsername: "hanako", isPopular: true },
@@ -28,6 +29,12 @@ async function getTrendingRecipes(): Promise<RecipeCardData[]> {
         photoUrl: true,
         saveCount: true,
         creator: { select: { username: true } },
+        hasPeanuts: true,
+        hasTreeNuts: true,
+        hasShellfish: true,
+        hasDairy: true,
+        hasGluten: true,
+        hasEggs: true,
       },
     });
 
@@ -40,6 +47,7 @@ async function getTrendingRecipes(): Promise<RecipeCardData[]> {
       saveCount: r.saveCount,
       creatorUsername: r.creator.username,
       isPopular: true,
+      allergens: getAllergens(r),
     }));
   } catch {
     return DEMO_RECIPES;
@@ -59,6 +67,12 @@ async function getNewRecipes(): Promise<RecipeCardData[]> {
         photoUrl: true,
         saveCount: true,
         creator: { select: { username: true } },
+        hasPeanuts: true,
+        hasTreeNuts: true,
+        hasShellfish: true,
+        hasDairy: true,
+        hasGluten: true,
+        hasEggs: true,
       },
     });
 
@@ -70,6 +84,7 @@ async function getNewRecipes(): Promise<RecipeCardData[]> {
       photoUrl: r.photoUrl,
       saveCount: r.saveCount,
       creatorUsername: r.creator.username,
+      allergens: getAllergens(r),
     }));
   } catch {
     return DEMO_RECIPES.slice(0, 8);

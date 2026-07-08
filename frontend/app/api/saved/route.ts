@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { getAllergens } from "@/lib/allergens";
 
 export async function GET() {
   try {
@@ -23,6 +24,12 @@ export async function GET() {
             photoUrl: true,
             saveCount: true,
             creator: { select: { username: true } },
+            hasPeanuts: true,
+            hasTreeNuts: true,
+            hasShellfish: true,
+            hasDairy: true,
+            hasGluten: true,
+            hasEggs: true,
           },
         },
       },
@@ -38,6 +45,7 @@ export async function GET() {
         saveCount: s.recipe.saveCount,
         creatorUsername: s.recipe.creator.username,
         savedAt: s.savedAt,
+        allergens: getAllergens(s.recipe),
       })),
     });
   } catch (error) {
