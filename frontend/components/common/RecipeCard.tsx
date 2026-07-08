@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { IconClock, IconStar, IconFlame } from "@tabler/icons-react";
+import { IconClock, IconStar, IconFlame, IconAlertTriangle } from "@tabler/icons-react";
 import clsx from "clsx";
 
 interface RecipeCardProps {
@@ -13,6 +13,7 @@ interface RecipeCardProps {
   isSafe?: boolean;
   isPopular?: boolean;
   rank?: number;
+  allergens?: string[];
 }
 
 /**
@@ -29,6 +30,7 @@ export default function RecipeCard({
   isSafe,
   isPopular,
   rank,
+  allergens,
 }: RecipeCardProps) {
   let badge: { text: string; className: string } | null = null;
 
@@ -106,6 +108,16 @@ export default function RecipeCard({
             {avgRating.toFixed(1)}
           </span>
         </div>
+
+        {allergens && allergens.length > 0 && (
+          <div
+            className="mt-1.5 inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.14em] text-warn-text"
+            title={`Contains ${allergens.join(", ")}`}
+          >
+            <IconAlertTriangle size={13} strokeWidth={1.5} />
+            {allergens.length === 1 ? allergens[0] : `${allergens.length} allergens`}
+          </div>
+        )}
       </div>
     </Link>
   );

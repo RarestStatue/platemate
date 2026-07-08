@@ -55,6 +55,7 @@ export default function SavedPage() {
             prepTimeMin={recipe.prepTimeMin}
             avgRating={recipe.avgRating}
             photoUrl={recipe.photoUrl}
+            allergens={recipe.allergens}
           />
         ))}
       </div>

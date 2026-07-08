@@ -25,6 +25,7 @@ interface ProfileUser {
     photoUrl: string | null;
     saveCount: number;
     creatorUsername: string;
+    allergens: string[];
   }[];
   reviews: {
     id: number;
@@ -118,6 +119,7 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
                 prepTimeMin={recipe.prepTimeMin}
                 avgRating={recipe.avgRating}
                 photoUrl={recipe.photoUrl}
+                allergens={recipe.allergens}
               />
             ))
           )}

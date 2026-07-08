@@ -31,10 +31,13 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
 
 # vercel
 .vercel
+
+# user-uploaded content (local disk storage, not for source control)
+/public/uploads/
 
 # typescript
 *.tsbuildinfo

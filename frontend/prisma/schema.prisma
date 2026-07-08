@@ -124,6 +124,10 @@ model Recipe {
   hasGluten    Boolean @default(false) @map("has_gluten")
   hasEggs      Boolean @default(false) @map("has_eggs")
 
+  isVegetarian Boolean @default(false) @map("is_vegetarian")
+  isVegan      Boolean @default(false) @map("is_vegan")
+  isHalal      Boolean @default(false) @map("is_halal")
+
   creator             User                  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   ingredients         RecipeIngredient[]
   steps               RecipeStep[]
@@ -134,6 +138,7 @@ model Recipe {
   shoppingItems       ShoppingListItem[]
   duplicateOriginals  RecipeDuplicateFlag[] @relation("original")
   duplicateCandidates RecipeDuplicateFlag[] @relation("candidate")
+  tags                RecipeTag[]
 
   @@index([creatorId])
   @@index([createdAt(sort: Desc)])
@@ -303,6 +308,29 @@ model ShoppingListItem {
 
   @@index([userId])
   @@map("shopping_list_items")
+}
+
+model Tag {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  displayName String      @map("display_name")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  recipes RecipeTag[]
+
+  @@map("tags")
+}
+
+model RecipeTag {
+  recipeId Int @map("recipe_id")
+  tagId    Int @map("tag_id")
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([recipeId, tagId])
+  @@index([tagId])
+  @@map("recipe_tags")
 }
 
 model RecipeDuplicateFlag {

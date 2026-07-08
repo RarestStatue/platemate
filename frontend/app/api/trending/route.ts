@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
+import { getAllergens } from "@/lib/allergens";
 
 const CACHE_KEY = "platemate:trending";
 const CACHE_TTL = 3600; // 1 hour
@@ -31,6 +32,12 @@ export async function GET() {
         saveCount: true,
         ratingCount: true,
         creator: { select: { username: true } },
+        hasPeanuts: true,
+        hasTreeNuts: true,
+        hasShellfish: true,
+        hasDairy: true,
+        hasGluten: true,
+        hasEggs: true,
       },
     });
 
@@ -44,6 +51,7 @@ export async function GET() {
         saveCount: r.saveCount,
         creatorUsername: r.creator.username,
         isPopular: true,
+        allergens: getAllergens(r),
       })),
     };
 

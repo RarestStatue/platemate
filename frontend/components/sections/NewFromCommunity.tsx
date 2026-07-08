@@ -18,6 +18,7 @@ export default function NewFromCommunity({ recipes }: NewFromCommunityProps) {
           prepTimeMin={recipe.prepTimeMin}
           avgRating={recipe.avgRating}
           photoUrl={recipe.photoUrl}
+          allergens={recipe.allergens}
         />
       ))}
     </div>

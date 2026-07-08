@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { IconClock, IconStar, IconFlame } from "@tabler/icons-react";
+import { IconClock, IconStar, IconFlame, IconAlertTriangle } from "@tabler/icons-react";
 import type { RecipeCardData } from "@/lib/types";
 
 export default function TrendingPage() {
@@ -77,6 +77,17 @@ export default function TrendingPage() {
                     <IconStar size={12} className="text-yellow-500" />
                     {recipe.avgRating.toFixed(1)}
                   </span>
+                  {recipe.allergens && recipe.allergens.length > 0 && (
+                    <span
+                      className="flex items-center gap-0.5 text-warn-text"
+                      title={`Contains ${recipe.allergens.join(", ")}`}
+                    >
+                      <IconAlertTriangle size={12} />
+                      {recipe.allergens.length === 1
+                        ? recipe.allergens[0]
+                        : `${recipe.allergens.length} allergens`}
+                    </span>
+                  )}
                 </div>
               </div>
             </Link>

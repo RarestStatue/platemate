@@ -99,6 +99,9 @@ CREATE TABLE "recipes" (
     "has_dairy" BOOLEAN NOT NULL DEFAULT false,
     "has_gluten" BOOLEAN NOT NULL DEFAULT false,
     "has_eggs" BOOLEAN NOT NULL DEFAULT false,
+    "is_vegetarian" BOOLEAN NOT NULL DEFAULT false,
+    "is_vegan" BOOLEAN NOT NULL DEFAULT false,
+    "is_halal" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "recipes_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "chk_recipes_prep_time_min" CHECK ("prep_time_min" >= 0),
@@ -236,6 +239,24 @@ CREATE TABLE "shopping_list_items" (
 );
 
 -- CreateTable
+CREATE TABLE "tags" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "display_name" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "tags_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "recipe_tags" (
+    "recipe_id" INTEGER NOT NULL,
+    "tag_id" INTEGER NOT NULL,
+
+    CONSTRAINT "recipe_tags_pkey" PRIMARY KEY ("recipe_id","tag_id")
+);
+
+-- CreateTable
 CREATE TABLE "recipe_duplicate_flags" (
     "id" SERIAL NOT NULL,
     "original_recipe_id" INTEGER NOT NULL,
@@ -286,6 +307,12 @@ CREATE UNIQUE INDEX "user_recipe_saves_user_id_recipe_id_key" ON "user_recipe_sa
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_follows_follower_id_following_id_key" ON "user_follows"("follower_id", "following_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tags_name_key" ON "tags"("name");
+
+-- CreateIndex
+CREATE INDEX "recipe_tags_tag_id_idx" ON "recipe_tags"("tag_id");
 
 -- CreateIndex
 CREATE INDEX "recipes_fts_idx" ON "recipes"
@@ -395,6 +422,12 @@ ALTER TABLE "shopping_list_items" ADD CONSTRAINT "shopping_list_items_ingredient
 
 -- AddForeignKey
 ALTER TABLE "shopping_list_items" ADD CONSTRAINT "shopping_list_items_from_recipe_id_fkey" FOREIGN KEY ("from_recipe_id") REFERENCES "recipes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "recipe_tags" ADD CONSTRAINT "recipe_tags_recipe_id_fkey" FOREIGN KEY ("recipe_id") REFERENCES "recipes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "recipe_tags" ADD CONSTRAINT "recipe_tags_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "tags"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "recipe_duplicate_flags" ADD CONSTRAINT "recipe_duplicate_flags_original_recipe_id_fkey" FOREIGN KEY ("original_recipe_id") REFERENCES "recipes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
