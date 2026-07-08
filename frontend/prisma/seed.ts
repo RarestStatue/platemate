@@ -18,6 +18,7 @@ async function main() {
   await prisma.recipeStep.deleteMany();
   await prisma.recipeIngredient.deleteMany();
   await prisma.recipe.deleteMany();
+  await prisma.tag.deleteMany();
   await prisma.userDietaryRestriction.deleteMany();
   await prisma.userProfile.deleteMany();
   await prisma.user.deleteMany();
@@ -103,6 +104,7 @@ async function main() {
       servings: 2,
       photoUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=1200",
       flags: { hasEggs: true, hasGluten: true },
+      tags: ["quick", "dinner", "asian"],
       items: [["white rice", 250, "g"], ["chicken breast", 200, "g"], ["egg", 2, "eggs"], ["soy sauce", 2, "tbsp"], ["garlic", 2, "cloves"]],
       steps: ["Cook rice or use leftover rice.", "Cook chicken in a pan.", "Scramble eggs.", "Add rice, soy sauce, and garlic.", "Stir fry until hot."],
     },
@@ -114,6 +116,7 @@ async function main() {
       servings: 2,
       photoUrl: "https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=1200",
       flags: { hasEggs: true, hasDairy: true, isVegetarian: true },
+      tags: ["breakfast", "high-protein", "quick"],
       items: [["oats", 80, "g"], ["banana", 1, "banana"], ["egg", 2, "eggs"], ["greek yogurt", 100, "g"]],
       steps: ["Blend oats, banana, eggs, and yogurt.", "Heat a lightly oiled pan.", "Pour small pancakes.", "Cook until golden on both sides."],
     },
@@ -125,6 +128,7 @@ async function main() {
       servings: 4,
       photoUrl: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=1200",
       flags: { hasGluten: true },
+      tags: ["dinner", "italian", "comfort-food"],
       items: [["pasta", 400, "g"], ["ground beef", 300, "g"], ["tomato sauce", 2, "cups"], ["onion", 1, "onion"], ["garlic", 2, "cloves"]],
       steps: ["Boil pasta.", "Brown beef with onion and garlic.", "Add tomato sauce.", "Simmer for 15 minutes.", "Serve sauce over pasta."],
     },
@@ -136,6 +140,7 @@ async function main() {
       servings: 1,
       photoUrl: "https://images.unsplash.com/photo-1510693206972-df098062cb71?w=1200",
       flags: { hasEggs: true, hasDairy: true, isVegetarian: true },
+      tags: ["breakfast", "quick", "vegetarian"],
       items: [["egg", 3, "eggs"], ["spinach", 50, "g"], ["mushrooms", 50, "g"], ["cheddar cheese", 30, "g"]],
       steps: ["Beat eggs.", "Cook vegetables.", "Add eggs to pan.", "Sprinkle cheese.", "Fold and serve."],
     },
@@ -147,6 +152,7 @@ async function main() {
       servings: 3,
       photoUrl: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200",
       flags: { hasDairy: true },
+      tags: ["meal-prep", "high-protein", "healthy"],
       items: [["chicken breast", 300, "g"], ["white rice", 300, "g"], ["greek yogurt", 120, "g"], ["lettuce", 80, "g"], ["bell pepper", 100, "g"]],
       steps: ["Cook rice.", "Season and cook chicken.", "Slice vegetables.", "Mix yogurt sauce.", "Assemble bowls."],
     },
@@ -158,6 +164,7 @@ async function main() {
       servings: 1,
       photoUrl: "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=1200",
       flags: { hasDairy: true, isVegetarian: true },
+      tags: ["breakfast", "quick", "high-protein"],
       items: [["blueberries", 100, "g"], ["banana", 1, "banana"], ["greek yogurt", 150, "g"], ["milk", 200, "ml"]],
       steps: ["Add all ingredients to blender.", "Blend until smooth.", "Pour into a cup and serve cold."],
     },
@@ -169,6 +176,7 @@ async function main() {
       servings: 2,
       photoUrl: "https://images.unsplash.com/photo-1614961233913-a5113a4a34ed?w=1200",
       flags: { hasDairy: true, isVegetarian: true },
+      tags: ["breakfast", "meal-prep", "cheap"],
       items: [["oats", 120, "g"], ["milk", 250, "ml"], ["greek yogurt", 100, "g"], ["blueberries", 80, "g"], ["banana", 1, "banana"]],
       steps: ["Mix oats, milk, and yogurt.", "Top with fruit.", "Refrigerate overnight.", "Eat cold or warm up."],
     },
@@ -180,6 +188,7 @@ async function main() {
       servings: 3,
       photoUrl: "https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?w=1200",
       flags: { hasDairy: true, hasGluten: true, isVegetarian: true },
+      tags: ["comfort-food", "dinner", "vegetarian"],
       items: [["pasta", 300, "g"], ["cheddar cheese", 150, "g"], ["milk", 250, "ml"], ["garlic", 1, "clove"]],
       steps: ["Boil pasta.", "Warm milk and cheese together.", "Add garlic.", "Mix pasta with sauce.", "Serve warm."],
     },
@@ -191,6 +200,7 @@ async function main() {
       servings: 4,
       photoUrl: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=1200",
       flags: { hasGluten: true },
+      tags: ["dinner", "mexican", "quick"],
       items: [["ground beef", 300, "g"], ["tortilla", 8, "pieces"], ["lettuce", 80, "g"], ["cheddar cheese", 80, "g"], ["tomato sauce", 0.5, "cup"]],
       steps: ["Cook beef.", "Warm tortillas.", "Prepare toppings.", "Fill tortillas.", "Serve immediately."],
     },
@@ -202,14 +212,29 @@ async function main() {
       servings: 2,
       photoUrl: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=1200",
       flags: { hasGluten: true, isVegetarian: true, isVegan: true },
+      tags: ["vegan", "quick", "healthy"],
       items: [["broccoli", 150, "g"], ["bell pepper", 100, "g"], ["mushrooms", 100, "g"], ["soy sauce", 2, "tbsp"], ["garlic", 2, "cloves"]],
       steps: ["Chop vegetables.", "Heat oil in pan.", "Add vegetables.", "Add soy sauce and garlic.", "Cook until tender."],
     },
   ];
 
   const recipes = [];
+  const tagIds = new Map<string, number>();
 
   for (const r of recipeData) {
+    const recipeTagIds: number[] = [];
+    for (const tagName of r.tags) {
+      let tagId = tagIds.get(tagName);
+      if (!tagId) {
+        const tag = await prisma.tag.create({
+          data: { name: tagName, displayName: tagName },
+        });
+        tagId = tag.id;
+        tagIds.set(tagName, tagId);
+      }
+      recipeTagIds.push(tagId);
+    }
+
     const recipe = await prisma.recipe.create({
       data: {
         creatorId: users[r.creator].id,
@@ -219,6 +244,9 @@ async function main() {
         servings: r.servings,
         photoUrl: r.photoUrl,
         ...r.flags,
+        tags: {
+          create: recipeTagIds.map((tagId) => ({ tagId })),
+        },
         ingredients: {
           create: r.items.map(([ingredientName, quantity, unit], index) => ({
             ingredientId: ingredients.get(String(ingredientName))!,

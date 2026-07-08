@@ -64,6 +64,22 @@ export const recipeUploadSchema = z.object({
       })
     )
     .min(1, "At least one step is required"),
+  tags: z.array(z.string().min(1).max(40)).max(10).default([]),
+  // Must be a path minted by POST /api/uploads, not an arbitrary client string.
+  // Guards against injecting external/absolute URLs into next/image src.
+  photoUrl: z
+    .string()
+    .regex(/^\/uploads\/[\w-]+\.(jpg|png|webp)$/, "Invalid photo URL")
+    .optional(),
+  hasPeanuts: z.boolean().default(false),
+  hasTreeNuts: z.boolean().default(false),
+  hasShellfish: z.boolean().default(false),
+  hasDairy: z.boolean().default(false),
+  hasGluten: z.boolean().default(false),
+  hasEggs: z.boolean().default(false),
+  isVegetarian: z.boolean().default(false),
+  isVegan: z.boolean().default(false),
+  isHalal: z.boolean().default(false),
 });
 
 export const recipeUpdateSchema = recipeUploadSchema
@@ -89,6 +105,7 @@ export const commentSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type RecipeUploadInput = z.infer<typeof recipeUploadSchema>;
+export type RecipeUploadFormInput = z.input<typeof recipeUploadSchema>;
 export type RecipeUpdateInput = z.infer<typeof recipeUpdateSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;

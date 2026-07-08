@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import {
   IconCamera,
   IconPlus,
@@ -11,7 +12,23 @@ import {
   IconCheck,
   IconAlertTriangle,
 } from "@tabler/icons-react";
-import { recipeUploadSchema, type RecipeUploadInput } from "@/lib/validators";
+import {
+  recipeUploadSchema,
+  type RecipeUploadInput,
+  type RecipeUploadFormInput,
+} from "@/lib/validators";
+
+const DIETARY_FIELDS = [
+  { name: "hasPeanuts", label: "Contains peanuts" },
+  { name: "hasTreeNuts", label: "Contains tree nuts" },
+  { name: "hasShellfish", label: "Contains shellfish" },
+  { name: "hasDairy", label: "Contains dairy" },
+  { name: "hasGluten", label: "Contains gluten" },
+  { name: "hasEggs", label: "Contains eggs" },
+  { name: "isVegetarian", label: "Vegetarian" },
+  { name: "isVegan", label: "Vegan" },
+  { name: "isHalal", label: "Halal" },
+] as const;
 
 type UploadState = "form" | "duplicate-warning" | "success";
 
@@ -28,13 +45,19 @@ export default function UploadPage() {
   const [error, setError] = useState("");
   const [duplicates, setDuplicates] = useState<DuplicateWarning[]>([]);
   const [createdRecipeId, setCreatedRecipeId] = useState<number | null>(null);
+  const [tagInput, setTagInput] = useState("");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
-  } = useForm<RecipeUploadInput>({
+  } = useForm<RecipeUploadFormInput, unknown, RecipeUploadInput>({
     resolver: zodResolver(recipeUploadSchema),
     defaultValues: {
       title: "",
@@ -43,8 +66,77 @@ export default function UploadPage() {
       servings: 2,
       ingredients: [{ ingredient: "", quantity: 1, unit: "cups" }],
       steps: [{ instruction: "" }],
+      tags: [],
+      photoUrl: undefined,
+      hasPeanuts: false,
+      hasTreeNuts: false,
+      hasShellfish: false,
+      hasDairy: false,
+      hasGluten: false,
+      hasEggs: false,
+      isVegetarian: false,
+      isVegan: false,
+      isHalal: false,
     },
   });
+
+  const tags = useWatch({ control, name: "tags" }) ?? [];
+
+  function addTag(raw: string) {
+    const value = raw.trim();
+    // Case-insensitive dedup to match the API's normalization (lowercased on
+    // upsert), so "Quick" and "quick" don't both survive as chips.
+    const exists = tags.some((t) => t.toLowerCase() === value.toLowerCase());
+    if (!value || exists || tags.length >= 10) return;
+    setValue("tags", [...tags, value]);
+  }
+
+  function removeTag(value: string) {
+    setValue(
+      "tags",
+      tags.filter((t) => t !== value)
+    );
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(tagInput);
+      setTagInput("");
+    }
+  }
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoError("");
+    setPhotoUploading(true);
+    const localPreview = URL.createObjectURL(file);
+    setPhotoPreview(localPreview);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/uploads", { method: "POST", body: formData });
+      const result = await res.json();
+
+      if (!res.ok) {
+        setPhotoError(result.error || "Failed to upload photo");
+        setPhotoPreview(null);
+        setValue("photoUrl", undefined);
+        return;
+      }
+
+      setValue("photoUrl", result.url);
+    } catch {
+      setPhotoError("Failed to upload photo");
+      setPhotoPreview(null);
+      setValue("photoUrl", undefined);
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
 
   const {
     fields: ingredientFields,
@@ -179,11 +271,42 @@ export default function UploadPage() {
         )}
 
         {/* Photo upload area */}
-        <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
-          <IconCamera size={32} className="mx-auto text-muted mb-2" />
-          <p className="text-sm text-muted">
-            Photo upload coming soon
-          </p>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handlePhotoSelect}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={photoUploading}
+            className="w-full border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-red transition-colors disabled:opacity-50"
+          >
+            {photoPreview ? (
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                <Image
+                  src={photoPreview}
+                  alt="Recipe photo preview"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <>
+                <IconCamera size={32} className="mx-auto text-muted mb-2" />
+                <p className="text-sm text-muted">
+                  {photoUploading ? "Uploading..." : "Add a photo"}
+                </p>
+              </>
+            )}
+          </button>
+          {photoError && (
+            <p className="text-red-dark text-xs mt-1">{photoError}</p>
+          )}
         </div>
 
         {/* Recipe name */}
@@ -341,6 +464,59 @@ export default function UploadPage() {
               {errors.steps.message || errors.steps.root?.message}
             </p>
           )}
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Tags</label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="flex items-center gap-1 bg-red-light text-red-dark text-xs px-2 py-1 rounded-full"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  aria-label={`Remove tag ${tag}`}
+                >
+                  <IconX size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            onBlur={() => {
+              addTag(tagInput);
+              setTagInput("");
+            }}
+            disabled={tags.length >= 10}
+            className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red disabled:opacity-50"
+            placeholder="e.g., vegan, quick, dessert (press Enter)"
+          />
+          {errors.tags && (
+            <p className="text-red-dark text-xs mt-1">{errors.tags.message}</p>
+          )}
+        </div>
+
+        {/* Dietary / allergen info */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Dietary &amp; allergen info
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {DIETARY_FIELDS.map(({ name, label }) => (
+              <label key={name} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" {...register(name)} className="accent-red" />
+                {label}
+              </label>
+            ))}
+          </div>
         </div>
 
         <button

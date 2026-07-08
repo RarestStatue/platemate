@@ -139,8 +139,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, description, prepTimeMin, servings, ingredients, steps } =
-      parsed.data;
+    const {
+      title,
+      description,
+      prepTimeMin,
+      servings,
+      ingredients,
+      steps,
+      tags,
+      photoUrl,
+      hasPeanuts,
+      hasTreeNuts,
+      hasShellfish,
+      hasDairy,
+      hasGluten,
+      hasEggs,
+      isVegetarian,
+      isVegan,
+      isHalal,
+    } = parsed.data;
     const userId = parseInt(session.user.id, 10);
 
     // Check for duplicates by title similarity
@@ -197,6 +214,20 @@ export async function POST(request: NextRequest) {
       }
       const normalizedIngredients = Array.from(byIngredientName.values());
 
+      // Normalize and upsert tags, same pattern as ingredients above.
+      const tagIds = new Map<string, number>();
+      for (const rawTag of tags) {
+        const normalizedName = rawTag.trim().toLowerCase().replace(/\s+/g, " ");
+        if (!normalizedName || tagIds.has(normalizedName)) continue;
+
+        const tag = await tx.tag.upsert({
+          where: { name: normalizedName },
+          update: {},
+          create: { name: normalizedName, displayName: rawTag.trim() },
+        });
+        tagIds.set(normalizedName, tag.id);
+      }
+
       const newRecipe = await tx.recipe.create({
         data: {
           creatorId: userId,
@@ -204,6 +235,17 @@ export async function POST(request: NextRequest) {
           description: description || null,
           prepTimeMin,
           servings,
+          photoUrl: photoUrl || null,
+
+          hasPeanuts,
+          hasTreeNuts,
+          hasShellfish,
+          hasDairy,
+          hasGluten,
+          hasEggs,
+          isVegetarian,
+          isVegan,
+          isHalal,
 
           ingredients: {
             create: normalizedIngredients.map((ing, i) => ({
@@ -221,6 +263,10 @@ export async function POST(request: NextRequest) {
               instruction: step.instruction,
               durationMin: step.durationMin || null,
             })),
+          },
+
+          tags: {
+            create: Array.from(tagIds.values()).map((tagId) => ({ tagId })),
           },
         },
 
