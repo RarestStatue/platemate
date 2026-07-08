@@ -9,6 +9,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const q = searchParams.get("q")?.trim();
+    // A comma-separated query ("egg, feta") is split into independent terms.
+    // A recipe matches if ANY term matches (OR); matching more terms ranks it
+    // higher via the summed relevance score. Empty segments are dropped, so a
+    // query of only commas/whitespace is treated as no text search.
+    const qTerms = q
+      ? q.split(",").map((t) => t.trim()).filter(Boolean)
+      : [];
     const cursor = searchParams.get("cursor");
     const sort = searchParams.get("sort") || "newest";
     const maxPrepTime = searchParams.get("maxPrepTime");
@@ -23,13 +30,11 @@ export async function GET(request: NextRequest) {
     // Build WHERE clause
     const where: Prisma.RecipeWhereInput = {};
 
-    // Full-text search using Prisma raw filter for ts_vector
-    if (q) {
-      where.OR = [
-        { title: { contains: q, mode: "insensitive" } },
-        { description: { contains: q, mode: "insensitive" } },
-      ];
-    }
+    // Text search (`q`) matches recipe titles, descriptions, ingredient names,
+    // and tag names, ranked by relevance. Because relevance is a computed score
+    // rather than an indexed column, that search runs as raw SQL below (the
+    // `q` branch). The Prisma `where` built here only carries the plain filters
+    // used when there is neither a text search nor an ingredient selection.
 
     if (maxPrepTime) {
       const parsed = parseInt(maxPrepTime, 10);
@@ -65,6 +70,93 @@ export async function GET(request: NextRequest) {
         orderBy = [{ createdAt: "desc" }, { id: "desc" }];
     }
 
+    // Secondary sort, expressed as SQL, shared by both raw-SQL branches below.
+    // Mirrors the Prisma `orderBy` above.
+    let secondarySort: Prisma.Sql;
+    switch (sort) {
+      case "rating":
+        secondarySort = Prisma.sql`r.avg_rating DESC`;
+        break;
+      case "prep_time":
+        secondarySort = Prisma.sql`r.prep_time_min ASC`;
+        break;
+      case "popular":
+        secondarySort = Prisma.sql`r.save_count DESC`;
+        break;
+      default:
+        secondarySort = Prisma.sql`r.created_at DESC`;
+    }
+
+    // Base non-text filters as SQL, shared by both raw-SQL branches below.
+    const baseConditions: Prisma.Sql[] = [];
+    if (maxPrepTime) {
+      const parsed = parseInt(maxPrepTime, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        baseConditions.push(Prisma.sql`r.prep_time_min <= ${parsed}`);
+      }
+    }
+    if (peanutFree) baseConditions.push(Prisma.sql`r.has_peanuts = false`);
+    if (dairyFree) baseConditions.push(Prisma.sql`r.has_dairy = false`);
+    if (glutenFree) baseConditions.push(Prisma.sql`r.has_gluten = false`);
+    if (vegetarian) baseConditions.push(Prisma.sql`r.is_vegetarian = true`);
+    if (vegan) baseConditions.push(Prisma.sql`r.is_vegan = true`);
+    if (halal) baseConditions.push(Prisma.sql`r.is_halal = true`);
+
+    // Text-search predicate: true when `q` matches the recipe title,
+    // description, any tag name/displayName, or any ingredient name/displayName.
+    // Correlated on r.id, so it composes with either raw query below.
+    const qMatch = (pattern: string): Prisma.Sql => Prisma.sql`(
+      r.title ILIKE ${pattern}
+      OR r.description ILIKE ${pattern}
+      OR EXISTS (
+        SELECT 1 FROM recipe_tags rt
+        JOIN tags t ON t.id = rt.tag_id
+        WHERE rt.recipe_id = r.id
+          AND (t.name ILIKE ${pattern} OR t.display_name ILIKE ${pattern})
+      )
+      OR EXISTS (
+        SELECT 1 FROM recipe_ingredients ri2
+        JOIN ingredients ing ON ing.id = ri2.ingredient_id
+        WHERE ri2.recipe_id = r.id
+          AND (ing.name ILIKE ${pattern} OR ing.display_name ILIKE ${pattern})
+      )
+    )`;
+
+    // Per-term relevance contribution: title (3) > tag / ingredient (2) >
+    // description (1). Summed across all query terms by qScore below.
+    const termScore = (pattern: string): Prisma.Sql => Prisma.sql`(
+      (CASE WHEN r.title ILIKE ${pattern} THEN 3 ELSE 0 END)
+      + (CASE WHEN r.description ILIKE ${pattern} THEN 1 ELSE 0 END)
+      + (CASE WHEN EXISTS (
+          SELECT 1 FROM recipe_tags rt
+          JOIN tags t ON t.id = rt.tag_id
+          WHERE rt.recipe_id = r.id
+            AND (t.name ILIKE ${pattern} OR t.display_name ILIKE ${pattern})
+        ) THEN 2 ELSE 0 END)
+      + (CASE WHEN EXISTS (
+          SELECT 1 FROM recipe_ingredients ri
+          JOIN ingredients i ON i.id = ri.ingredient_id
+          WHERE ri.recipe_id = r.id
+            AND (i.name ILIKE ${pattern} OR i.display_name ILIKE ${pattern})
+        ) THEN 2 ELSE 0 END)
+    )`;
+
+    // ILIKE patterns, one per query term.
+    const qPatterns = qTerms.map((t) => `%${t}%`);
+    // Filter predicate: recipe qualifies if ANY term matches any field.
+    const qWhere = (): Prisma.Sql =>
+      Prisma.sql`(${Prisma.join(
+        qPatterns.map((p) => qMatch(p)),
+        " OR "
+      )})`;
+    // Relevance score: sum of every term's per-field contribution, so recipes
+    // matching more terms (and stronger fields) sort first.
+    const qScore = (): Prisma.Sql =>
+      Prisma.join(
+        qPatterns.map((p) => termScore(p)),
+        " + "
+      );
+
     // Ingredient-match prioritization: recipes matching more of the
     // selected ingredients rank above recipes matching fewer. Prisma's
     // relation orderBy only counts ALL related rows, not a filtered
@@ -74,43 +166,13 @@ export async function GET(request: NextRequest) {
         i.trim().toLowerCase().replace(/\s+/g, " ")
       );
 
-      const conditions: Prisma.Sql[] = [];
-      if (q) {
-        const pattern = `%${q}%`;
-        conditions.push(
-          Prisma.sql`(r.title ILIKE ${pattern} OR r.description ILIKE ${pattern})`
-        );
+      const conditions: Prisma.Sql[] = [...baseConditions];
+      if (qTerms.length > 0) {
+        conditions.push(qWhere());
       }
-      if (maxPrepTime) {
-        const parsed = parseInt(maxPrepTime, 10);
-        if (!isNaN(parsed) && parsed > 0) {
-          conditions.push(Prisma.sql`r.prep_time_min <= ${parsed}`);
-        }
-      }
-      if (peanutFree) conditions.push(Prisma.sql`r.has_peanuts = false`);
-      if (dairyFree) conditions.push(Prisma.sql`r.has_dairy = false`);
-      if (glutenFree) conditions.push(Prisma.sql`r.has_gluten = false`);
-      if (vegetarian) conditions.push(Prisma.sql`r.is_vegetarian = true`);
-      if (vegan) conditions.push(Prisma.sql`r.is_vegan = true`);
-      if (halal) conditions.push(Prisma.sql`r.is_halal = true`);
 
       const whereSql =
         conditions.length > 0 ? Prisma.join(conditions, " AND ") : Prisma.sql`TRUE`;
-
-      let secondarySort: Prisma.Sql;
-      switch (sort) {
-        case "rating":
-          secondarySort = Prisma.sql`r.avg_rating DESC`;
-          break;
-        case "prep_time":
-          secondarySort = Prisma.sql`r.prep_time_min ASC`;
-          break;
-        case "popular":
-          secondarySort = Prisma.sql`r.save_count DESC`;
-          break;
-        default:
-          secondarySort = Prisma.sql`r.created_at DESC`;
-      }
 
       // Cursor here is an offset (not a recipe id) since ordering is by a
       // computed match count rather than a stable indexed column.
@@ -167,6 +229,64 @@ export async function GET(request: NextRequest) {
           saveCount: r.saveCount,
           creatorUsername: r.creatorUsername,
           matchCount: r.matchCount,
+        })),
+        nextCursor,
+      });
+    }
+
+    // Text search with relevance ranking: no ingredient selection, but a query
+    // string is present. Matches title/description/tags/ingredients and orders
+    // by a weighted relevance score — title (3) > tag / ingredient (2) >
+    // description (1) — with the requested sort then id as tiebreakers.
+    if (qTerms.length > 0) {
+      const whereSql = Prisma.join([...baseConditions, qWhere()], " AND ");
+
+      // Cursor is an offset (not a recipe id) since ordering is by a computed
+      // relevance score rather than a stable indexed column.
+      const offset = cursor ? parseInt(cursor, 10) : 0;
+      if (cursor && (isNaN(offset) || offset < 0)) {
+        return Response.json({ error: "Invalid cursor" }, { status: 400 });
+      }
+
+      const rows = await prisma.$queryRaw<
+        Array<{
+          id: number;
+          title: string;
+          prepTimeMin: number;
+          avgRating: number;
+          photoUrl: string | null;
+          saveCount: number;
+          creatorUsername: string;
+        }>
+      >(Prisma.sql`
+        SELECT
+          r.id,
+          r.title,
+          r.prep_time_min AS "prepTimeMin",
+          r.avg_rating AS "avgRating",
+          r.photo_url AS "photoUrl",
+          r.save_count AS "saveCount",
+          u.username AS "creatorUsername"
+        FROM recipes r
+        JOIN users u ON u.id = r.creator_id
+        WHERE ${whereSql}
+        ORDER BY (${qScore()}) DESC, ${secondarySort}, r.id DESC
+        LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
+      `);
+
+      const hasMore = rows.length > PAGE_SIZE;
+      const items = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+      const nextCursor = hasMore ? String(offset + PAGE_SIZE) : null;
+
+      return Response.json({
+        recipes: items.map((r) => ({
+          id: r.id,
+          title: r.title,
+          prepTimeMin: r.prepTimeMin,
+          avgRating: r.avgRating,
+          photoUrl: r.photoUrl,
+          saveCount: r.saveCount,
+          creatorUsername: r.creatorUsername,
         })),
         nextCursor,
       });
