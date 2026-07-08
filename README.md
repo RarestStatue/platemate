@@ -17,6 +17,26 @@ Docker Desktop is required on macOS and Windows. On Linux, install Docker Engine
 
 ---
 
+## Environment files
+
+This repo ships two sample env files, git-tracked as templates:
+
+| Sample | Copy to | Used by |
+|---|---|---|
+| `.env.example` | `.env` (project root) | `docker compose` (Postgres/Redis credentials) |
+| `frontend/.env.example` | `frontend/.env` | Next.js app (`DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, `REDIS_URL`) |
+
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+```
+
+Root defaults work out of the box for local dev. In `frontend/.env`, generate `AUTH_SECRET` (see step 5 below) and keep `DATABASE_URL` / `REDIS_URL` passwords in sync with the root `.env`.
+
+Never commit real `.env` files (notice for other contributors).
+
+---
+
 ## Setup
 
 ### 1. Clone the repo
@@ -28,14 +48,13 @@ cd platemate
 
 ### 2. Create the root environment file
 
-Copy the example below into a file named `.env` in the project root:
+Copy `.env.example` to `.env` in the project root:
 
-```env
-POSTGRES_USER=platemate
-POSTGRES_PASSWORD=platemate_dev_password
-POSTGRES_DB=platemate
-REDIS_PASSWORD=redis_dev_password
+```bash
+cp .env.example .env
 ```
+
+Defaults work for local dev. Change values if needed.
 
 ### 3. Start the database and cache
 
@@ -54,14 +73,14 @@ npm install
 
 ### 5. Create the frontend environment file
 
-Create `frontend/.env.local` with the following content, replacing passwords if you changed them in step 2:
+Copy `frontend/.env.example` to `frontend/.env`:
 
-```env
-DATABASE_URL="postgresql://platemate:platemate_dev_password@localhost:5433/platemate"
-AUTH_SECRET="replace-with-output-of-openssl-rand-base64-32"
-NEXTAUTH_URL="http://localhost:3000"
-REDIS_URL="redis://:redis_dev_password@localhost:6379"
+```bash
+cd frontend
+cp .env.example .env
 ```
+
+Edit `frontend/.env` and fill in `AUTH_SECRET`, and update `DATABASE_URL` / `REDIS_URL` passwords if you changed them in step 2.
 
 To generate `AUTH_SECRET`:
 
