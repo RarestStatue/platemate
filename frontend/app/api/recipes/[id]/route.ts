@@ -1,7 +1,26 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { recipeUpdateSchema } from "@/lib/validators";
+
+/** Bump the lifetime counter and today's bucket, which trending sums over its window. */
+async function recordView(recipeId: number) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  await prisma.$transaction([
+    prisma.recipe.update({
+      where: { id: recipeId },
+      data: { viewCount: { increment: 1 } },
+      select: { id: true },
+    }),
+    prisma.recipeViewDaily.upsert({
+      where: { recipeId_day: { recipeId, day: today } },
+      create: { recipeId, day: today, count: 1 },
+      update: { count: { increment: 1 } },
+    }),
+  ]);
+}
 
 export async function GET(
   _request: NextRequest,
@@ -78,6 +97,14 @@ export async function GET(
       isSaved = !!save;
       userRating = rating?.rating ?? null;
     }
+
+    // Runs after the response is sent, but is still awaited by the runtime, so
+    // it can't be cut short the way a bare floating promise can.
+    after(() =>
+      recordView(recipeId).catch((error) =>
+        console.error("View count update failed:", error)
+      )
+    );
 
     return Response.json({
       ...recipe,

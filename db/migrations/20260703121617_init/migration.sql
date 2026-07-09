@@ -92,6 +92,7 @@ CREATE TABLE "recipes" (
     "rating_count" INTEGER NOT NULL DEFAULT 0,
     "comment_count" INTEGER NOT NULL DEFAULT 0,
     "save_count" INTEGER NOT NULL DEFAULT 0,
+    "view_count" INTEGER NOT NULL DEFAULT 0,
     "last_engagement_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "has_peanuts" BOOLEAN NOT NULL DEFAULT false,
     "has_tree_nuts" BOOLEAN NOT NULL DEFAULT false,
@@ -200,6 +201,15 @@ CREATE TABLE "recipe_comments" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "recipe_comments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "recipe_view_daily" (
+    "recipe_id" INTEGER NOT NULL,
+    "day" DATE NOT NULL,
+    "count" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "recipe_view_daily_pkey" PRIMARY KEY ("recipe_id","day")
 );
 
 -- CreateTable
@@ -337,10 +347,16 @@ CREATE INDEX "recipes_avg_rating_idx" ON "recipes"("avg_rating" DESC);
 CREATE INDEX "recipes_save_count_idx" ON "recipes"("save_count" DESC);
 
 -- CreateIndex
+CREATE INDEX "recipes_view_count_idx" ON "recipes"("view_count" DESC);
+
+-- CreateIndex
 CREATE INDEX "recipes_prep_time_min_idx" ON "recipes"("prep_time_min");
 
 -- CreateIndex
 CREATE INDEX "recipes_last_engagement_at_idx" ON "recipes"("last_engagement_at" DESC);
+
+-- CreateIndex
+CREATE INDEX "recipe_view_daily_day_idx" ON "recipe_view_daily"("day");
 
 -- CreateIndex
 CREATE INDEX "shopping_list_items_user_id_idx" ON "shopping_list_items"("user_id");
@@ -401,6 +417,9 @@ ALTER TABLE "recipe_comments" ADD CONSTRAINT "recipe_comments_user_id_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "recipe_comments" ADD CONSTRAINT "recipe_comments_parent_comment_id_fkey" FOREIGN KEY ("parent_comment_id") REFERENCES "recipe_comments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "recipe_view_daily" ADD CONSTRAINT "recipe_view_daily_recipe_id_fkey" FOREIGN KEY ("recipe_id") REFERENCES "recipes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_recipe_saves" ADD CONSTRAINT "user_recipe_saves_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

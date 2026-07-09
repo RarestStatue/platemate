@@ -115,6 +115,7 @@ model Recipe {
   ratingCount      Int      @default(0) @map("rating_count")
   commentCount     Int      @default(0) @map("comment_count")
   saveCount        Int      @default(0) @map("save_count")
+  viewCount        Int      @default(0) @map("view_count")
   lastEngagementAt DateTime @default(now()) @map("last_engagement_at")
 
   hasPeanuts   Boolean @default(false) @map("has_peanuts")
@@ -135,6 +136,7 @@ model Recipe {
   reviews             RecipeReview[]
   comments            RecipeComment[]
   saves               UserRecipeSave[]
+  dailyViews          RecipeViewDaily[]
   shoppingItems       ShoppingListItem[]
   duplicateOriginals  RecipeDuplicateFlag[] @relation("original")
   duplicateCandidates RecipeDuplicateFlag[] @relation("candidate")
@@ -144,9 +146,24 @@ model Recipe {
   @@index([createdAt(sort: Desc)])
   @@index([avgRating(sort: Desc)])
   @@index([saveCount(sort: Desc)])
+  @@index([viewCount(sort: Desc)])
   @@index([prepTimeMin])
   @@index([lastEngagementAt(sort: Desc)])
   @@map("recipes")
+}
+
+/// Per-day view counts, bucketed so the table grows with (recipes x days)
+/// rather than with raw traffic. Trending sums the buckets inside its window.
+model RecipeViewDaily {
+  recipeId Int      @map("recipe_id")
+  day      DateTime @db.Date
+  count    Int      @default(0)
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([recipeId, day])
+  @@index([day])
+  @@map("recipe_view_daily")
 }
 
 model RecipeIngredient {

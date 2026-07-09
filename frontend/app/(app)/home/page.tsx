@@ -6,6 +6,7 @@ import NewFromCommunity from "@/components/sections/NewFromCommunity";
 import HomeSearch from "./HomeSearch";
 import type { RecipeCardData } from "@/lib/types";
 import { getAllergens } from "@/lib/allergens";
+import { getEngagementTrendingRecipes } from "@/lib/trending";
 
 const DEMO_RECIPES: RecipeCardData[] = [
   { id: 1, title: "Miso butter mushrooms on toast", prepTimeMin: 15, avgRating: 4.7, photoUrl: null, saveCount: 214, creatorUsername: "hanako", isPopular: true },
@@ -91,6 +92,14 @@ async function getNewRecipes(): Promise<RecipeCardData[]> {
   }
 }
 
+async function getTrendingNow(): Promise<RecipeCardData[]> {
+  try {
+    return await getEngagementTrendingRecipes(10);
+  } catch {
+    return DEMO_RECIPES;
+  }
+}
+
 async function safeAuth() {
   try {
     return await auth();
@@ -109,10 +118,11 @@ function timeGreeting() {
 }
 
 export default async function HomePage() {
-  const [session, trending, newest] = await Promise.all([
+  const [session, trending, newest, trendingNow] = await Promise.all([
     safeAuth(),
     getTrendingRecipes(),
     getNewRecipes(),
+    getTrendingNow(),
   ]);
 
   const name =
@@ -264,6 +274,27 @@ export default async function HomePage() {
           </Link>
         </div>
         <NewFromCommunity recipes={newest} />
+      </section>
+
+      <div className="rule my-8 md:my-14" />
+
+      {/* Trending now strip */}
+      <section className="mb-10 md:mb-14">
+        <div className="mb-4 flex items-end justify-between md:mb-6">
+          <div>
+            <p className="eyebrow mb-2 hidden md:block">Section III</p>
+            <h2 className="display text-[clamp(1.75rem,4vw,3.5rem)]">
+              Trending <span className="italic text-matcha">now</span>.
+            </h2>
+          </div>
+          <Link
+            href="/trending"
+            className="text-sm text-ink-soft underline underline-offset-4 hover:text-ink"
+          >
+            see all →
+          </Link>
+        </div>
+        <TrendingHero recipes={trendingNow} />
       </section>
     </div>
   );
