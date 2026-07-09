@@ -1,9 +1,19 @@
-import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
-import { getAllergens } from "@/lib/allergens";
+import { getEngagementTrendingRecipes } from "@/lib/trending";
 
 const CACHE_KEY = "platemate:trending";
-const CACHE_TTL = 3600; // 1 hour
+const RESULT_LIMIT = 10;
+
+/** Seconds until the next UTC midnight, so the cached list turns over once a day. */
+function secondsUntilUtcMidnight() {
+  const now = new Date();
+  const midnight = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + 1
+  );
+  return Math.max(1, Math.ceil((midnight - now.getTime()) / 1000));
+}
 
 export async function GET() {
   try {
@@ -17,47 +27,17 @@ export async function GET() {
       // Redis unavailable, fall through to DB
     }
 
-    const recipes = await prisma.recipe.findMany({
-      take: 10,
-      orderBy: [
-        { lastEngagementAt: "desc" },
-        { saveCount: "desc" },
-      ],
-      select: {
-        id: true,
-        title: true,
-        prepTimeMin: true,
-        avgRating: true,
-        photoUrl: true,
-        saveCount: true,
-        ratingCount: true,
-        creator: { select: { username: true } },
-        hasPeanuts: true,
-        hasTreeNuts: true,
-        hasShellfish: true,
-        hasDairy: true,
-        hasGluten: true,
-        hasEggs: true,
-      },
-    });
-
-    const result = {
-      recipes: recipes.map((r) => ({
-        id: r.id,
-        title: r.title,
-        prepTimeMin: r.prepTimeMin,
-        avgRating: r.avgRating,
-        photoUrl: r.photoUrl,
-        saveCount: r.saveCount,
-        creatorUsername: r.creator.username,
-        isPopular: true,
-        allergens: getAllergens(r),
-      })),
-    };
+    const recipes = await getEngagementTrendingRecipes(RESULT_LIMIT);
+    const result = { recipes };
 
     // Cache the result
     try {
-      await redis.set(CACHE_KEY, JSON.stringify(result), "EX", CACHE_TTL);
+      await redis.set(
+        CACHE_KEY,
+        JSON.stringify(result),
+        "EX",
+        secondsUntilUtcMidnight()
+      );
     } catch {
       // Redis write failed, non-fatal
     }
