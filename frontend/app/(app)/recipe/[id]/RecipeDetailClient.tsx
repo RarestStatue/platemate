@@ -63,6 +63,7 @@ interface RecipeProps {
     prepTimeMin: number;
     servings: number;
     photoUrl: string | null;
+    createdAt: string;
     avgRating: number;
     reviewCount: number;
     ratingCount: number;
@@ -250,7 +251,16 @@ export default function RecipeDetailClient({
             @{recipe.creator.username}
           </a>
         </p>
-
+        
+        <p className="mt-1 text-sm text-muted">
+          Posted{" "}
+          {new Date(recipe.createdAt).toLocaleDateString("en-CA", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </p>
+        
         {/* Allergen warning */}
         {allergens.length > 0 && (
           <div className="mt-4 bg-warn-bg text-warn-text px-4 py-3 rounded-lg flex items-start gap-2">
