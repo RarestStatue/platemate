@@ -58,9 +58,9 @@ export default function Hero() {
   //   0.22–0.36   pure video (breather)
   //   0.36–0.58   Body pull-quote
   //   0.58–0.66   pure video (breather)
-  //   0.66–0.74   Callout 1 — "raid the shelf."
+  //   0.66–0.74   Callout 1: "raid the shelf."
   //   0.74–0.80   pure video (breather)
-  //   0.80–0.88   Callout 2 — "no receipts."
+  //   0.80–0.88   Callout 2: "no receipts."
   //   0.88–1.00   CTA (final frame held)
   const titleO = useTransform(scrollYProgress, [0, 0.05, 0.16, 0.22], [0, 1, 1, 0]);
   const titleY = useTransform(scrollYProgress, [0, 0.05, 0.16, 0.22], [24, 0, 0, -24]);
@@ -161,7 +161,7 @@ export default function Hero() {
           }}
         />
 
-        {/* Corner watermark cover — bottom-right radial dark spot */}
+        {/* Corner watermark cover: bottom-right radial dark spot */}
         <div
           aria-hidden
           className="pointer-events-none absolute bottom-0 right-0 h-24 w-40 sm:h-28 sm:w-56"

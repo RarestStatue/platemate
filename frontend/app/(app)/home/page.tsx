@@ -132,7 +132,7 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 pt-4 pb-8 sm:px-8 sm:pt-6">
-      {/* Editorial masthead — desktop only */}
+      {/* Editorial masthead, desktop only */}
       <div className="mb-6 hidden items-center justify-between text-[10px] uppercase tracking-[0.28em] text-ink-mute md:flex">
         <span>Today&apos;s edition</span>
         <span>
@@ -180,7 +180,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {/* Right rail: food waste widget — hidden on mobile */}
+        {/* Right rail: food waste widget, hidden on mobile */}
         <aside className="hidden lg:col-span-5 lg:block">
           <div className="rounded-2xl border border-ink/15 bg-ink p-6 text-cream">
             <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.28em] text-cream/60">
@@ -234,7 +234,7 @@ export default async function HomePage() {
         <TrendingHero recipes={trending} />
       </section>
 
-      {/* Food waste explainer band — desktop only */}
+      {/* Food waste explainer band, desktop only */}
       <section className="mb-14 hidden rounded-2xl border border-ink/15 bg-paper p-8 md:block sm:p-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-end">
           <div className="md:col-span-6">
