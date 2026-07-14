@@ -8,7 +8,7 @@ export default async function RootPage() {
     const session = await auth();
     if (session) redirect("/home");
   } catch {
-    // DB / auth not configured — show landing anyway.
+    // DB / auth not configured; show landing anyway.
   }
   return <Landing />;
 }
