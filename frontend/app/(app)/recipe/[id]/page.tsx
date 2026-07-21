@@ -24,7 +24,17 @@ export default async function RecipeDetailPage({
       },
       ingredients: {
         orderBy: { sortOrder: "asc" },
-        include: { ingredient: true },
+        include: {
+          ingredient: {
+            include: {
+              substitutionsFrom: {
+                include: {
+                  substituteIngredient: { select: { displayName: true } },
+                },
+              },
+            },
+          },
+        },
       },
       steps: { orderBy: { stepNumber: "asc" } },
       reviews: {
@@ -56,10 +66,12 @@ export default async function RecipeDetailPage({
   const session = await auth();
   let isSaved = false;
   let userRating: number | null = null;
+  let shoppingListIngredientIds: number[] = [];
 
   if (session?.user?.id) {
     const userId = parseInt(session.user.id, 10);
-    const [save, rating] = await Promise.all([
+    const recipeIngredientIds = recipe.ingredients.map((i) => i.ingredient.id);
+    const [save, rating, shoppingItems] = await Promise.all([
       prisma.userRecipeSave.findUnique({
         where: { userId_recipeId: { userId, recipeId } },
       }),
@@ -67,9 +79,20 @@ export default async function RecipeDetailPage({
         where: { recipeId_userId: { recipeId, userId } },
         select: { rating: true },
       }),
+      prisma.shoppingListItem.findMany({
+        where: {
+          userId,
+          isChecked: false,
+          ingredientId: { in: recipeIngredientIds },
+        },
+        select: { ingredientId: true },
+      }),
     ]);
     isSaved = !!save;
     userRating = rating?.rating ?? null;
+    shoppingListIngredientIds = shoppingItems
+      .map((i) => i.ingredientId)
+      .filter((id): id is number => id !== null);
   }
 
   // Serialize for client
@@ -85,11 +108,17 @@ export default async function RecipeDetailPage({
     },
     ingredients: recipe.ingredients.map((i) => ({
       id: i.id,
+      ingredientId: i.ingredient.id,
       ingredient: i.ingredient.displayName,
       quantity: i.quantity,
       unit: i.unit,
       notes: i.notes,
       sortOrder: i.sortOrder,
+      isPantryStaple: i.ingredient.isPantryStaple,
+      substitutes: i.ingredient.substitutionsFrom.map((s) => ({
+        name: s.substituteIngredient.displayName,
+        flavorImpact: s.flavorImpact,
+      })),
     })),
     steps: recipe.steps.map((s) => ({
       ...s,
@@ -118,6 +147,7 @@ export default async function RecipeDetailPage({
       isSaved={isSaved}
       userRating={userRating}
       currentUserId={session?.user?.id ? parseInt(session.user.id, 10) : null}
+      shoppingListIngredientIds={shoppingListIngredientIds}
     />
   );
 }
