@@ -13,15 +13,26 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import { useServingStore } from "@/stores/useServingStore";
+import { useHaveIngredientsStore } from "@/stores/useHaveIngredientsStore";
+import { normalizeIngredientName } from "@/lib/ingredients";
 import clsx from "clsx";
+
+interface Substitute {
+  name: string;
+  flavorImpact: string;
+}
 
 interface Ingredient {
   id: number;
+  ingredientId: number;
   ingredient: string;
+  name: string;
   quantity: number;
   unit: string;
   notes: string | null;
   sortOrder: number;
+  isPantryStaple: boolean;
+  substitutes: Substitute[];
 }
 
 interface Step {
@@ -84,6 +95,7 @@ interface RecipeProps {
   isSaved: boolean;
   userRating: number | null;
   currentUserId: number | null;
+  shoppingListIngredientIds: number[];
 }
 
 export default function RecipeDetailClient({
@@ -91,9 +103,16 @@ export default function RecipeDetailClient({
   isSaved: initialSaved,
   userRating: _initialRating,
   currentUserId,
+  shoppingListIngredientIds,
 }: RecipeProps) {
   const [saved, setSaved] = useState(initialSaved);
   const [savingState, setSavingState] = useState(false);
+  const [missingIds, setMissingIds] = useState<Set<number>>(new Set());
+  const [onListIds, setOnListIds] = useState<Set<number>>(
+    () => new Set(shoppingListIngredientIds)
+  );
+  const [addingId, setAddingId] = useState<number | null>(null);
+  const [autoSeeded, setAutoSeeded] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -112,6 +131,26 @@ export default function RecipeDetailClient({
   useEffect(() => {
     setOriginalServings(recipe.servings);
   }, [recipe.servings, setOriginalServings]);
+
+  const haveIngredients = useHaveIngredientsStore((s) => s.have);
+
+  // Auto-select as "missing" any recipe ingredient not in the user's
+  // search-page "have" list. Fires once per mount so it never overwrites
+  // a manual toggle made afterward.
+  useEffect(() => {
+    if (autoSeeded) return;
+    if (haveIngredients.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time seed from sessionStorage-backed store, guarded by autoSeeded so it never re-fires
+      setAutoSeeded(true);
+      return;
+    }
+    const haveSet = new Set(haveIngredients.map(normalizeIngredientName));
+    const auto = recipe.ingredients
+      .filter((i) => !haveSet.has(normalizeIngredientName(i.name)))
+      .map((i) => i.ingredientId);
+    setMissingIds(new Set(auto));
+    setAutoSeeded(true);
+  }, [autoSeeded, haveIngredients, recipe.ingredients]);
 
   const scale = getScale();
   const isScaled = currentServings !== originalServings;
@@ -186,6 +225,50 @@ export default function RecipeDetailClient({
   function formatQuantity(qty: number): string {
     const scaled = qty * scale;
     return scaled % 1 === 0 ? String(scaled) : scaled.toFixed(2);
+  }
+
+  function toggleMissing(ingredientId: number) {
+    setMissingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(ingredientId)) {
+        next.delete(ingredientId);
+      } else {
+        next.add(ingredientId);
+      }
+      return next;
+    });
+  }
+
+  async function addToShoppingList(ing: Ingredient) {
+    if (!currentUserId || addingId !== null || onListIds.has(ing.ingredientId)) {
+      return;
+    }
+    setAddingId(ing.ingredientId);
+    try {
+      const res = await fetch("/api/shopping-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ingredientId: ing.ingredientId,
+          fromRecipeId: recipe.id,
+          quantity: Number((ing.quantity * scale).toFixed(2)),
+          unit: ing.unit,
+        }),
+      });
+      if (res.ok) {
+        setOnListIds((prev) => new Set(prev).add(ing.ingredientId));
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setAddingId(null);
+    }
+  }
+
+  function importance(ing: Ingredient): "staple" | "substitutable" | "essential" {
+    if (ing.isPantryStaple) return "staple";
+    if (ing.substitutes.length > 0) return "substitutable";
+    return "essential";
   }
 
   return (
@@ -302,29 +385,106 @@ export default function RecipeDetailClient({
 
         {/* Ingredients */}
         <div className="mt-6">
-          <h2 className="text-lg font-bold mb-3">Ingredients</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold">Ingredients</h2>
+            {missingIds.size > 0 && (
+              <span className="bg-warn-bg text-warn-text text-xs font-medium px-2 py-1 rounded-full">
+                Missing {missingIds.size} of {recipe.ingredients.length}
+              </span>
+            )}
+          </div>
+          {autoSeeded && haveIngredients.length > 0 && missingIds.size > 0 && (
+            <p className="mb-3 bg-warn-bg text-warn-text text-xs px-3 py-2 rounded-lg">
+              Auto-selected {missingIds.size} ingredient
+              {missingIds.size === 1 ? "" : "s"} you may be missing, based on
+              your search.
+            </p>
+          )}
           <ul className="space-y-2">
-            {recipe.ingredients.map((ing) => (
-              <li
-                key={ing.id}
-                className="flex items-center justify-between py-1 border-b border-gray-50"
-              >
-                <span className="text-sm">
-                  {ing.ingredient}
-                  {ing.notes && (
-                    <span className="text-muted"> ({ing.notes})</span>
+            {recipe.ingredients.map((ing) => {
+              const isMissing = missingIds.has(ing.ingredientId);
+              const tier = importance(ing);
+              const onList = onListIds.has(ing.ingredientId);
+              return (
+                <li key={ing.id} className="border-b border-gray-50 py-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isMissing}
+                        onChange={() => toggleMissing(ing.ingredientId)}
+                        className="accent-red w-4 h-4"
+                        aria-label={`Mark ${ing.ingredient} as missing`}
+                      />
+                      <span className={clsx(isMissing && "text-warn-text")}>
+                        {ing.ingredient}
+                        {ing.notes && (
+                          <span className="text-muted"> ({ing.notes})</span>
+                        )}
+                      </span>
+                    </label>
+                    <span
+                      className={clsx(
+                        "text-sm font-medium whitespace-nowrap",
+                        isScaled && "text-red"
+                      )}
+                    >
+                      {formatQuantity(ing.quantity)} {ing.unit}
+                    </span>
+                  </div>
+
+                  {isMissing && (
+                    <div className="ml-6 mt-2 mb-2 space-y-1.5 text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={clsx(
+                            "px-2 py-0.5 rounded-full font-medium",
+                            tier === "staple" && "bg-gray-100 text-muted",
+                            tier === "substitutable" &&
+                              "bg-red-light text-red",
+                            tier === "essential" &&
+                              "bg-warn-bg text-warn-text"
+                          )}
+                        >
+                          {tier === "staple"
+                            ? "Pantry staple"
+                            : tier === "substitutable"
+                            ? "Substitutable"
+                            : "Essential"}
+                        </span>
+
+                        {onList ? (
+                          <span className="text-muted">
+                            On your shopping list ✓
+                          </span>
+                        ) : currentUserId ? (
+                          <button
+                            onClick={() => addToShoppingList(ing)}
+                            disabled={addingId === ing.ingredientId}
+                            className="text-red font-medium hover:underline disabled:opacity-50"
+                          >
+                            {addingId === ing.ingredientId
+                              ? "Adding..."
+                              : "Need to buy: add to list"}
+                          </button>
+                        ) : (
+                          <span className="text-muted">Need to buy</span>
+                        )}
+                      </div>
+
+                      {ing.substitutes.length > 0 && (
+                        <p className="text-muted">
+                          Swap:{" "}
+                          {ing.substitutes
+                            .map((s) => `${s.name} (${s.flavorImpact})`)
+                            .join(", ")}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </span>
-                <span
-                  className={clsx(
-                    "text-sm font-medium",
-                    isScaled && "text-red"
-                  )}
-                >
-                  {formatQuantity(ing.quantity)} {ing.unit}
-                </span>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
 

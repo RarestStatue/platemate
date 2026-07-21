@@ -52,7 +52,7 @@ export default function Maths() {
       aria-label="The $1,300 problem"
     >
       <div className="sticky top-0 grid h-screen grid-rows-[auto_1fr_auto] overflow-hidden">
-        {/* Faint dot grid — cream on green, ledger-paper feel */}
+        {/* Faint dot grid: cream on green, ledger-paper feel */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-30"

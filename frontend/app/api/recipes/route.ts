@@ -5,6 +5,7 @@ import { recipeUploadSchema } from "@/lib/validators";
 import { PAGE_SIZE } from "@/lib/constants";
 import { Prisma } from "@prisma/client";
 import { getAllergens } from "@/lib/allergens";
+import { normalizeIngredientName } from "@/lib/ingredients";
 
 export async function GET(request: NextRequest) {
   try {
@@ -163,9 +164,7 @@ export async function GET(request: NextRequest) {
     // relation orderBy only counts ALL related rows, not a filtered
     // subset, so the match count has to be computed with raw SQL.
     if (selectedIngredients.length > 0) {
-      const normalizedNames = selectedIngredients.map((i) =>
-        i.trim().toLowerCase().replace(/\s+/g, " ")
-      );
+      const normalizedNames = selectedIngredients.map(normalizeIngredientName);
 
       const conditions: Prisma.Sql[] = [...baseConditions];
       if (qTerms.length > 0) {
@@ -192,6 +191,7 @@ export async function GET(request: NextRequest) {
           saveCount: number;
           creatorUsername: string;
           matchCount: number;
+          totalIngredients: number;
           hasPeanuts: boolean;
           hasTreeNuts: boolean;
           hasShellfish: boolean;
@@ -214,7 +214,11 @@ export async function GET(request: NextRequest) {
           r.has_dairy AS "hasDairy",
           r.has_gluten AS "hasGluten",
           r.has_eggs AS "hasEggs",
-          COUNT(DISTINCT ri.ingredient_id)::int AS "matchCount"
+          COUNT(DISTINCT ri.ingredient_id)::int AS "matchCount",
+          (
+            SELECT COUNT(*)::int FROM recipe_ingredients ri_all
+            WHERE ri_all.recipe_id = r.id
+          ) AS "totalIngredients"
         FROM recipes r
         JOIN users u ON u.id = r.creator_id
         LEFT JOIN recipe_ingredients ri ON ri.recipe_id = r.id
@@ -242,16 +246,15 @@ export async function GET(request: NextRequest) {
           saveCount: r.saveCount,
           creatorUsername: r.creatorUsername,
           matchCount: r.matchCount,
+          missingCount: r.totalIngredients - r.matchCount,
           allergens: getAllergens(r),
         })),
         nextCursor,
       });
     }
 
-    // Text search with relevance ranking: no ingredient selection, but a query
-    // string is present. Matches title/description/tags/ingredients and orders
-    // by a weighted relevance score — title (3) > tag / ingredient (2) >
-    // description (1) — with the requested sort then id as tiebreakers.
+    // Text search with relevance ranking: weighted score of title (3) >
+    // tag/ingredient (2) > description (1), then the requested sort and id.
     if (qTerms.length > 0) {
       const whereSql = Prisma.join([...baseConditions, qWhere()], " AND ");
 

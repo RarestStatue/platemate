@@ -268,7 +268,7 @@ function SpeedIllustration() {
           strokeWidth="4"
           strokeLinecap="round"
         />
-        {/* Minute hand — animated. transformBox:view-box so origin
+        {/* Minute hand, animated. transformBox:view-box so origin
             coords resolve in SVG viewBox space, not the line's own bbox. */}
         <motion.line
           x1="120"

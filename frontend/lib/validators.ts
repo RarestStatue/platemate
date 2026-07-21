@@ -102,6 +102,17 @@ export const commentSchema = z.object({
   parentCommentId: z.number().int().optional(),
 });
 
+export const shoppingListAddSchema = z.object({
+  ingredientId: z.number().int().positive(),
+  fromRecipeId: z.number().int().positive().optional(),
+  quantity: z.number().positive().optional(),
+  unit: z.string().min(1).max(40).optional(),
+});
+
+export const shoppingListDeleteSchema = z.object({
+  id: z.number().int().positive(),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type RecipeUploadInput = z.infer<typeof recipeUploadSchema>;
@@ -109,3 +120,5 @@ export type RecipeUploadFormInput = z.input<typeof recipeUploadSchema>;
 export type RecipeUpdateInput = z.infer<typeof recipeUpdateSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;
+export type ShoppingListAddInput = z.infer<typeof shoppingListAddSchema>;
+export type ShoppingListDeleteInput = z.infer<typeof shoppingListDeleteSchema>;

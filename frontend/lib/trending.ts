@@ -42,9 +42,8 @@ export async function getEngagementTrendingRecipes(
     Date.now() - TRENDING_WINDOW_DAYS * 24 * 60 * 60 * 1000
   );
 
-  // Engagement is counted *within the window* from the event tables, not from
-  // the recipes table's lifetime counters — otherwise an old recipe with a
-  // large all-time count would outrank a genuinely hot new one.
+  // Engagement is counted within the window from the event tables, not from
+  // lifetime counters, so old high-count recipes can't outrank new ones.
   const rows = await prisma.$queryRaw<TrendingRow[]>`
     WITH windowed_views AS (
       SELECT recipe_id, SUM(count)::int AS views
