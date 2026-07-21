@@ -13,6 +13,8 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import { useServingStore } from "@/stores/useServingStore";
+import { useHaveIngredientsStore } from "@/stores/useHaveIngredientsStore";
+import { normalizeIngredientName } from "@/lib/ingredients";
 import clsx from "clsx";
 
 interface Substitute {
@@ -24,6 +26,7 @@ interface Ingredient {
   id: number;
   ingredientId: number;
   ingredient: string;
+  name: string;
   quantity: number;
   unit: string;
   notes: string | null;
@@ -109,6 +112,7 @@ export default function RecipeDetailClient({
     () => new Set(shoppingListIngredientIds)
   );
   const [addingId, setAddingId] = useState<number | null>(null);
+  const [autoSeeded, setAutoSeeded] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -127,6 +131,26 @@ export default function RecipeDetailClient({
   useEffect(() => {
     setOriginalServings(recipe.servings);
   }, [recipe.servings, setOriginalServings]);
+
+  const haveIngredients = useHaveIngredientsStore((s) => s.have);
+
+  // Auto-select as "missing" any recipe ingredient not in the user's
+  // search-page "have" list. Fires once per mount so it never overwrites
+  // a manual toggle made afterward.
+  useEffect(() => {
+    if (autoSeeded) return;
+    if (haveIngredients.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time seed from sessionStorage-backed store, guarded by autoSeeded so it never re-fires
+      setAutoSeeded(true);
+      return;
+    }
+    const haveSet = new Set(haveIngredients.map(normalizeIngredientName));
+    const auto = recipe.ingredients
+      .filter((i) => !haveSet.has(normalizeIngredientName(i.name)))
+      .map((i) => i.ingredientId);
+    setMissingIds(new Set(auto));
+    setAutoSeeded(true);
+  }, [autoSeeded, haveIngredients, recipe.ingredients]);
 
   const scale = getScale();
   const isScaled = currentServings !== originalServings;
@@ -369,6 +393,13 @@ export default function RecipeDetailClient({
               </span>
             )}
           </div>
+          {autoSeeded && haveIngredients.length > 0 && missingIds.size > 0 && (
+            <p className="mb-3 bg-warn-bg text-warn-text text-xs px-3 py-2 rounded-lg">
+              Auto-selected {missingIds.size} ingredient
+              {missingIds.size === 1 ? "" : "s"} you may be missing, based on
+              your search.
+            </p>
+          )}
           <ul className="space-y-2">
             {recipe.ingredients.map((ing) => {
               const isMissing = missingIds.has(ing.ingredientId);

@@ -5,6 +5,7 @@ import { recipeUploadSchema } from "@/lib/validators";
 import { PAGE_SIZE } from "@/lib/constants";
 import { Prisma } from "@prisma/client";
 import { getAllergens } from "@/lib/allergens";
+import { normalizeIngredientName } from "@/lib/ingredients";
 
 export async function GET(request: NextRequest) {
   try {
@@ -163,9 +164,7 @@ export async function GET(request: NextRequest) {
     // relation orderBy only counts ALL related rows, not a filtered
     // subset, so the match count has to be computed with raw SQL.
     if (selectedIngredients.length > 0) {
-      const normalizedNames = selectedIngredients.map((i) =>
-        i.trim().toLowerCase().replace(/\s+/g, " ")
-      );
+      const normalizedNames = selectedIngredients.map(normalizeIngredientName);
 
       const conditions: Prisma.Sql[] = [...baseConditions];
       if (qTerms.length > 0) {

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { IconSearch, IconAdjustmentsHorizontal, IconX } from "@tabler/icons-react";
 import RecipeCard from "@/components/common/RecipeCard";
 import FilterPanel from "@/components/common/FilterPanel";
+import { useHaveIngredientsStore } from "@/stores/useHaveIngredientsStore";
 import type {
   RecipeCardData,
   DietaryFilters,
@@ -24,6 +25,11 @@ export default function SearchClient() {
   const [maxPrepTime, setMaxPrepTime] = useState<PrepTimeFilter>(null);
   const [sort, setSort] = useState<SortOption>("newest");
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const setHave = useHaveIngredientsStore((s) => s.setHave);
+  useEffect(() => {
+    setHave(ingredients);
+  }, [ingredients, setHave]);
 
   const fetchRecipes = useCallback(async () => {
     setLoading(true);

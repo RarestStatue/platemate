@@ -110,6 +110,7 @@ export default async function RecipeDetailPage({
       id: i.id,
       ingredientId: i.ingredient.id,
       ingredient: i.ingredient.displayName,
+      name: i.ingredient.name,
       quantity: i.quantity,
       unit: i.unit,
       notes: i.notes,
