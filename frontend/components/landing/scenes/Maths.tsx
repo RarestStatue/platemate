@@ -159,7 +159,7 @@ export default function Maths() {
               >
                 That&apos;s the{" "}
                 <span className="italic text-matcha-soft">half-jar of pesto</span>,
-                the browning banana, the bag of spinach at the back —
+                the browning banana, the bag of spinach at the back -
                 paid for, forgotten, tossed.
               </motion.p>
             </div>

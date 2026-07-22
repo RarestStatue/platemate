@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   IconHeart,
@@ -20,6 +21,7 @@ import clsx from "clsx";
 interface Substitute {
   name: string;
   flavorImpact: string;
+  notes: string | null;
 }
 
 interface Ingredient {
@@ -46,6 +48,8 @@ interface Review {
   id: number;
   text: string;
   createdAt: string;
+  updatedAt: string;
+  rating: number | null;
   user: { id: number; username: string };
 }
 
@@ -96,6 +100,13 @@ interface RecipeProps {
   userRating: number | null;
   currentUserId: number | null;
   shoppingListIngredientIds: number[];
+  currentUserReview: {
+    id: number;
+    text: string;
+    rating: number;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
 }
 
 export default function RecipeDetailClient({
@@ -104,7 +115,9 @@ export default function RecipeDetailClient({
   userRating: _initialRating,
   currentUserId,
   shoppingListIngredientIds,
+  currentUserReview,
 }: RecipeProps) {
+  const router = useRouter();
   const [saved, setSaved] = useState(initialSaved);
   const [savingState, setSavingState] = useState(false);
   const [missingIds, setMissingIds] = useState<Set<number>>(new Set());
@@ -116,8 +129,9 @@ export default function RecipeDetailClient({
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
-  const [reviewText, setReviewText] = useState("");
-  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewText, setReviewText] = useState(currentUserReview?.text ?? "");
+  const [reviewRating, setReviewRating] = useState(currentUserReview?.rating ?? 0);
+  const isEditingReview = currentUserReview !== null;
 
   const {
     originalServings,
@@ -185,14 +199,28 @@ export default function RecipeDetailClient({
   async function submitReview() {
     if (!currentUserId || !reviewText.trim() || reviewRating < 1) return;
     try {
-      await fetch(`/api/recipes/${recipe.id}/reviews`, {
-        method: "POST",
+      const res = await fetch(`/api/recipes/${recipe.id}/reviews`, {
+        method: isEditingReview ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: reviewText.trim(), rating: reviewRating }),
       });
-      setReviewText("");
-      setReviewRating(0);
-      // Optimistic: would refresh in production
+      if (res.ok) router.refresh();
+    } catch {
+      // silent
+    }
+  }
+
+  async function deleteReview() {
+    if (!currentUserId || !isEditingReview) return;
+    try {
+      const res = await fetch(`/api/recipes/${recipe.id}/reviews`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setReviewText("");
+        setReviewRating(0);
+        router.refresh();
+      }
     } catch {
       // silent
     }
@@ -203,7 +231,7 @@ export default function RecipeDetailClient({
     const text = parentId ? replyText.trim() : commentText.trim();
     if (!text) return;
     try {
-      await fetch(`/api/recipes/${recipe.id}/comments`, {
+      const res = await fetch(`/api/recipes/${recipe.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -211,11 +239,14 @@ export default function RecipeDetailClient({
           parentCommentId: parentId || undefined,
         }),
       });
-      if (parentId) {
-        setReplyText("");
-        setReplyTo(null);
-      } else {
-        setCommentText("");
+      if (res.ok) {
+        if (parentId) {
+          setReplyText("");
+          setReplyTo(null);
+        } else {
+          setCommentText("");
+        }
+        router.refresh();
       }
     } catch {
       // silent
@@ -473,12 +504,15 @@ export default function RecipeDetailClient({
                       </div>
 
                       {ing.substitutes.length > 0 && (
-                        <p className="text-muted">
-                          Swap:{" "}
-                          {ing.substitutes
-                            .map((s) => `${s.name} (${s.flavorImpact})`)
-                            .join(", ")}
-                        </p>
+                        <div className="text-muted space-y-0.5">
+                          {ing.substitutes.map((s, idx) => (
+                            <p key={idx}>
+                              Swap: <span className="font-medium">{s.name}</span> - {" "}
+                              {s.flavorImpact}
+                              {s.notes ? ` (${s.notes})` : ""}
+                            </p>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}
@@ -547,8 +581,16 @@ export default function RecipeDetailClient({
                 disabled={!reviewText.trim() || reviewRating < 1}
                 className="mt-2 bg-red text-white px-4 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50"
               >
-                Submit review
+                {isEditingReview ? "Update review" : "Submit review"}
               </button>
+              {isEditingReview && (
+                <button
+                  onClick={deleteReview}
+                  className="mt-2 ml-3 text-sm text-muted hover:text-red"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           )}
 
@@ -561,9 +603,30 @@ export default function RecipeDetailClient({
                 <span className="font-medium text-sm">
                   @{review.user.username}
                 </span>
+                {review.rating != null && (
+                  <span
+                    className="flex items-center gap-0.5"
+                    aria-label={`${review.rating} out of 5 stars`}
+                  >
+                    {[1, 2, 3, 4, 5].map((s) =>
+                      s <= review.rating! ? (
+                        <IconStarFilled
+                          key={s}
+                          size={13}
+                          className="text-yellow-500"
+                        />
+                      ) : (
+                        <IconStar key={s} size={13} className="text-gray-300" />
+                      )
+                    )}
+                  </span>
+                )}
                 <span className="text-xs text-muted">
                   {new Date(review.createdAt).toLocaleDateString()}
                 </span>
+                {review.updatedAt !== review.createdAt && (
+                  <span className="text-xs text-muted italic">(edited)</span>
+                )}
               </div>
               <p className="text-sm">{review.text}</p>
             </div>
@@ -607,7 +670,7 @@ export default function RecipeDetailClient({
                     @{comment.user.username}
                   </span>
                   <span className="text-xs text-muted">
-                    {new Date(comment.createdAt).toLocaleDateString()}
+                    {new Date(comment.createdAt).toLocaleString()}
                   </span>
                 </div>
                 <p className="text-sm">{comment.text}</p>
@@ -658,7 +721,7 @@ export default function RecipeDetailClient({
                       @{reply.user.username}
                     </span>
                     <span className="text-xs text-muted">
-                      {new Date(reply.createdAt).toLocaleDateString()}
+                      {new Date(reply.createdAt).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-sm">{reply.text}</p>

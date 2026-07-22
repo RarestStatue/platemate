@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import { IconUser } from "@tabler/icons-react";
 import RecipeCard from "@/components/common/RecipeCard";
+import FollowButton from "@/components/common/FollowButton";
 import clsx from "clsx";
 
 interface ProfileUser {
   id: number;
   username: string;
   createdAt: string;
+  isSelf: boolean;
+  isFollowing: boolean;
+  viewerIsAuthed: boolean;
   profile: {
     bio: string | null;
     avatarUrl: string | null;
@@ -31,6 +33,7 @@ interface ProfileUser {
     id: number;
     text: string;
     createdAt: string;
+    updatedAt: string;
     recipe: { id: number; title: string };
   }[];
 }
@@ -43,23 +46,42 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
       {/* Profile header */}
       <div className="flex items-center gap-4 mb-6">
         <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-          {user.profile?.avatarUrl ? (
-            <Image
-              src={user.profile.avatarUrl}
-              alt={user.username}
-              width={64}
-              height={64}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <IconUser size={32} className="text-muted" />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element -- plain img so a broken/absent avatar can fall back to the bundled default via onError (next/image can't swap src on error) */}
+          <img
+            src={user.profile?.avatarUrl || "/default-avatar.svg"}
+            alt={user.username}
+            width={64}
+            height={64}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (!img.src.endsWith("/default-avatar.svg")) {
+                img.src = "/default-avatar.svg";
+              }
+            }}
+          />
         </div>
         <div>
-          <h1 className="text-xl font-bold">@{user.username}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold">@{user.username}</h1>
+            {!user.isSelf && user.viewerIsAuthed && (
+              <FollowButton username={user.username} initialFollowing={user.isFollowing} />
+            )}
+            {user.isSelf && (
+              <a
+                href="/settings"
+                className="rounded-full border border-border px-4 py-1.5 text-sm text-muted hover:text-foreground"
+              >
+                Edit profile
+              </a>
+            )}
+          </div>
           {user.profile?.bio && (
             <p className="text-sm text-muted mt-1">{user.profile.bio}</p>
           )}
+          <p className="text-xs text-muted mt-1">
+            Joined {new Date(user.createdAt).toLocaleDateString("en-CA", { year: "numeric", month: "long" })}
+          </p>
           <div className="flex gap-4 mt-2 text-sm text-muted">
             <span>
               <strong className="text-foreground">
@@ -145,6 +167,9 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
                 <p className="text-sm mt-1">{review.text}</p>
                 <p className="text-xs text-muted mt-1">
                   {new Date(review.createdAt).toLocaleDateString()}
+                  {review.updatedAt !== review.createdAt && (
+                    <span className="italic ml-1">(edited)</span>
+                  )}
                 </p>
               </div>
             ))

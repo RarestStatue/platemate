@@ -8,7 +8,7 @@ function createClient(): PrismaClient {
   try {
     return new PrismaClient();
   } catch (err) {
-    console.error("[db] PrismaClient init failed — using throwing stub:", err);
+    console.error("[db] PrismaClient init failed - using throwing stub:", err);
     // Fallback: proxy where every access rejects, so top-level import doesn't crash
     // and route-level try/catch can handle the query failure gracefully.
     const stub = new Proxy(

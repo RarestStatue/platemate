@@ -4,6 +4,9 @@ import { motion, useReducedMotion } from "motion/react";
 
 type Variant = "eggs" | "greens" | "citrus" | "grain" | "beans" | "cheese";
 
+// Round computed SVG coords to keep server/client float serialization identical (avoids hydration mismatch)
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
 type Props = {
   variant?: Variant;
   className?: string;
@@ -210,8 +213,8 @@ function GrainContent({ p }: { p: (typeof PALETTES)[Variant] }) {
       {Array.from({ length: 42 }).map((_, i) => {
         const angle = (i / 42) * Math.PI * 2;
         const r = 15 + (i % 5) * 8;
-        const x = 120 + Math.cos(angle) * r + ((i * 7) % 11) - 5;
-        const y = 130 + Math.sin(angle) * r * 0.75 + ((i * 3) % 7) - 3;
+        const x = r2(120 + Math.cos(angle) * r + ((i * 7) % 11) - 5);
+        const y = r2(130 + Math.sin(angle) * r * 0.75 + ((i * 3) % 7) - 3);
         return (
           <ellipse
             key={i}
@@ -242,8 +245,8 @@ function BeansContent({ p }: { p: (typeof PALETTES)[Variant] }) {
       {Array.from({ length: 20 }).map((_, i) => {
         const angle = (i / 20) * Math.PI * 2 + (i % 3);
         const r = 20 + (i % 4) * 12;
-        const x = 120 + Math.cos(angle) * r;
-        const y = 130 + Math.sin(angle) * r * 0.72;
+        const x = r2(120 + Math.cos(angle) * r);
+        const y = r2(130 + Math.sin(angle) * r * 0.72);
         return (
           <ellipse
             key={i}

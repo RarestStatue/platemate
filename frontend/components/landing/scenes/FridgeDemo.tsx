@@ -9,7 +9,10 @@ import {
   useMotionValueEvent,
   useReducedMotion,
 } from "motion/react";
-import DrawnPlate from "../motion/DrawnPlate";
+import PlateImage from "../motion/PlateImage";
+import { useWeeklyRecipes } from "@/hooks/useWeeklyRecipes";
+import { normalizeIngredientName } from "@/lib/ingredients";
+import type { WeeklyRecipe } from "@/lib/landing-recipes";
 
 type Ing = { emoji: string; name: string; qty: string };
 type Recipe = {
@@ -18,9 +21,57 @@ type Recipe = {
   needs: string[];
   variant: "eggs" | "greens" | "citrus" | "grain" | "beans" | "cheese";
   hint: string;
+  photoUrl: string | null;
 };
 
-const POOL: Ing[] = [
+const EMOJI: Record<string, string> = {
+  egg: "🥚",
+  eggs: "🥚",
+  cheddar: "🧀",
+  cheese: "🧀",
+  feta: "🧀",
+  spinach: "🥬",
+  lettuce: "🥬",
+  lemon: "🍋",
+  onion: "🧅",
+  tomato: "🍅",
+  tomatoes: "🍅",
+  rice: "🍚",
+  potato: "🥔",
+  chilli: "🌶️",
+  parsley: "🌿",
+  carrot: "🥕",
+  garlic: "🧄",
+  bean: "🫘",
+  beans: "🫘",
+  chicken: "🍗",
+  beef: "🥩",
+  salmon: "🐟",
+  pasta: "🍝",
+  tortilla: "🫓",
+  milk: "🥛",
+  yogurt: "🥣",
+  oat: "🥣",
+  oats: "🥣",
+  banana: "🍌",
+  blueberr: "🫐",
+  broccoli: "🥦",
+  mushroom: "🍄",
+  pepper: "🫑",
+  soy: "🫙",
+  quinoa: "🌾",
+  olive: "🫒",
+};
+// DB ingredient names are often compound ("cheddar cheese", "tomato sauce"),
+// so fall back to a substring match (longest key first) before giving up.
+const EMOJI_KEYS = Object.keys(EMOJI).sort((a, b) => b.length - a.length);
+const emojiFor = (name: string) => {
+  if (EMOJI[name]) return EMOJI[name];
+  const hit = EMOJI_KEYS.find((key) => name.includes(key));
+  return hit ? EMOJI[hit] : "🥄";
+};
+
+const FALLBACK_POOL: Ing[] = [
   { emoji: "🥚", name: "eggs", qty: "×6" },
   { emoji: "🧀", name: "cheddar", qty: "block" },
   { emoji: "🥬", name: "spinach", qty: "handful" },
@@ -35,13 +86,14 @@ const POOL: Ing[] = [
   { emoji: "🧄", name: "garlic", qty: "×3" },
 ];
 
-const RECIPES: Recipe[] = [
+const FALLBACK_RECIPES: Recipe[] = [
   {
     title: "greek spinach omelette",
     time: "12 min",
     needs: ["eggs", "spinach", "cheddar", "lemon"],
     variant: "greens",
     hint: "the 'I have eggs' rescue",
+    photoUrl: null,
   },
   {
     title: "cheddar egg fried rice",
@@ -49,6 +101,7 @@ const RECIPES: Recipe[] = [
     needs: ["eggs", "cheddar", "onion", "rice", "spinach"],
     variant: "grain",
     hint: "yesterday's rice, redeemed",
+    photoUrl: null,
   },
   {
     title: "lemon feta frittata",
@@ -56,6 +109,7 @@ const RECIPES: Recipe[] = [
     needs: ["eggs", "cheddar", "lemon", "onion", "spinach", "chilli"],
     variant: "citrus",
     hint: "half a lemon, hunk of feta",
+    photoUrl: null,
   },
   {
     title: "shakshuka",
@@ -63,6 +117,7 @@ const RECIPES: Recipe[] = [
     needs: ["eggs", "onion", "tomatoes", "chilli", "spinach", "parsley"],
     variant: "eggs",
     hint: "one pan, one crusty loaf",
+    photoUrl: null,
   },
   {
     title: "melty grilled cheese",
@@ -70,6 +125,7 @@ const RECIPES: Recipe[] = [
     needs: ["cheddar", "onion", "tomatoes"],
     variant: "cheese",
     hint: "cold, portable, still good",
+    photoUrl: null,
   },
   {
     title: "potato hash",
@@ -77,16 +133,60 @@ const RECIPES: Recipe[] = [
     needs: ["potato", "onion", "chilli", "cheddar", "spinach"],
     variant: "grain",
     hint: "the sunday-morning save",
+    photoUrl: null,
   },
 ];
 
-const DEFAULT_ORDER = POOL.map((i) => i.name);
+// Placeholder WeeklyRecipe[] fed to the hook; ignored in "fallback" mode
+// (FALLBACK_POOL/FALLBACK_RECIPES render instead) and replaced by real DB
+// rows in "db" mode.
+const FALLBACK_CARDS: WeeklyRecipe[] = FALLBACK_RECIPES.map((r, i) => ({
+  id: i + 1,
+  title: r.title,
+  prepTimeMin: parseInt(r.time, 10),
+  time: r.time,
+  photoUrl: r.photoUrl,
+  hint: r.hint,
+  variant: r.variant,
+  ingredients: r.needs,
+}));
 
 export default function FridgeDemo() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
   const [autoCount, setAutoCount] = useState(0);
   const [override, setOverride] = useState<string[] | null>(null);
+  const { recipes, source } = useWeeklyRecipes(FALLBACK_CARDS);
+
+  // Dynamic union: POOL and each recipe's `needs` must share one vocabulary,
+  // otherwise match bars read 0% for DB recipes.
+  const { POOL, RECIPES, DEFAULT_ORDER } = useMemo(() => {
+    if (source === "fallback") {
+      return {
+        POOL: FALLBACK_POOL,
+        RECIPES: FALLBACK_RECIPES,
+        DEFAULT_ORDER: FALLBACK_POOL.map((i) => i.name),
+      };
+    }
+
+    const dbRecipes: Recipe[] = recipes.map((r) => ({
+      title: r.title,
+      time: r.time,
+      needs: r.ingredients.map(normalizeIngredientName),
+      variant: r.variant,
+      hint: r.hint,
+      photoUrl: r.photoUrl,
+    }));
+
+    const names = Array.from(new Set(dbRecipes.flatMap((r) => r.needs))).slice(0, 12);
+    const pool: Ing[] = names.map((name) => ({
+      emoji: emojiFor(name),
+      name,
+      qty: "·",
+    }));
+
+    return { POOL: pool, RECIPES: dbRecipes, DEFAULT_ORDER: names };
+  }, [source, recipes]);
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -119,7 +219,7 @@ export default function FridgeDemo() {
         return a.needs.length - b.needs.length;
       })
       .slice(0, 5);
-  }, [picked]);
+  }, [picked, RECIPES]);
 
   const progressBar = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
@@ -326,7 +426,7 @@ export default function FridgeDemo() {
                   exit={{ opacity: 0 }}
                   className="mt-4 font-serif text-sm italic text-ink-mute"
                 >
-                  keep scrolling — we&apos;ll fill the shelves.
+                  keep scrolling - we&apos;ll fill the shelves.
                 </motion.p>
               )}
             </AnimatePresence>
@@ -387,7 +487,7 @@ function RecipeCard({
     >
       {/* Mini plate */}
       <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-paper">
-        <DrawnPlate variant={recipe.variant} size={72} animated={false} />
+        <PlateImage recipe={recipe} size={72} />
       </div>
 
       {/* Meta */}

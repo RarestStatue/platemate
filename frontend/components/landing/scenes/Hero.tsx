@@ -332,7 +332,7 @@ export default function Hero() {
             </p>
             <p className="mx-auto mt-8 max-w-xl text-base leading-relaxed text-cream/85 sm:text-lg">
               Platemate is a recipe browser for students who don&apos;t want to
-              shop. Type what&apos;s in the fridge — get something worth eating.
+              shop. Type what&apos;s in the fridge - get something worth eating.
             </p>
           </motion.div>
 
