@@ -118,7 +118,10 @@ function PillarDot({
   scrollYProgress: MotionValue<number>;
   total: number;
 }) {
-  const start = (index - 0.15) / total;
+  // Clamp start to >= 0. A negative first offset makes Motion's native
+  // ScrollTimeline/WAAPI path emit keyframes outside [0,1], which Chrome rejects
+  // with "Offsets must be monotonically non-decreasing", crashing the tree.
+  const start = Math.max(0, (index - 0.15) / total);
   const end = (index + 0.5) / total;
   const opacity = useTransform(scrollYProgress, [start, end], [0.25, 1]);
   const scale = useTransform(scrollYProgress, [start, end], [0.7, 1]);
@@ -195,10 +198,11 @@ function SpeedIllustration() {
         />
         {Array.from({ length: 12 }).map((_, i) => {
           const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
-          const x1 = 120 + Math.cos(a) * 88;
-          const y1 = 120 + Math.sin(a) * 88;
-          const x2 = 120 + Math.cos(a) * 98;
-          const y2 = 120 + Math.sin(a) * 98;
+          // Round to keep server/client float serialization identical (avoids hydration mismatch)
+          const x1 = Math.round((120 + Math.cos(a) * 88) * 100) / 100;
+          const y1 = Math.round((120 + Math.sin(a) * 88) * 100) / 100;
+          const x2 = Math.round((120 + Math.cos(a) * 98) * 100) / 100;
+          const y2 = Math.round((120 + Math.sin(a) * 98) * 100) / 100;
           return (
             <line
               key={i}

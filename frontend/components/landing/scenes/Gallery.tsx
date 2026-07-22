@@ -5,72 +5,77 @@ import {
   motion,
   useScroll,
   useTransform,
+  useMotionValue,
+  useMotionValueEvent,
   useReducedMotion,
   type MotionValue,
 } from "motion/react";
-import DrawnPlate from "../motion/DrawnPlate";
+import PlateImage from "../motion/PlateImage";
+import { useWeeklyRecipes } from "@/hooks/useWeeklyRecipes";
+import type { WeeklyRecipe } from "@/lib/landing-recipes";
 
-type Card = {
-  title: string;
-  time: string;
+type Card = WeeklyRecipe & {
   uses: number;
   total: number;
-  variant: "eggs" | "greens" | "citrus" | "grain" | "beans" | "cheese";
-  hint: string;
-  ingredients: string[];
 };
 
-const CARDS: Card[] = [
+const FALLBACK_CARDS: WeeklyRecipe[] = [
   {
+    id: 1,
     title: "greek spinach omelette",
+    prepTimeMin: 12,
     time: "12 min",
-    uses: 4,
-    total: 4,
+    photoUrl: null,
     variant: "greens",
     hint: "the 'I have eggs' rescue.",
     ingredients: ["eggs", "spinach", "feta", "olive oil"],
   },
   {
+    id: 2,
     title: "lemon feta frittata",
+    prepTimeMin: 20,
     time: "20 min",
-    uses: 3,
-    total: 6,
+    photoUrl: null,
     variant: "citrus",
     hint: "half a lemon, hunk of feta.",
     ingredients: ["eggs", "lemon", "feta", "herbs", "onion", "butter"],
   },
   {
+    id: 3,
     title: "cheddar egg fried rice",
+    prepTimeMin: 15,
     time: "15 min",
-    uses: 5,
-    total: 5,
+    photoUrl: null,
     variant: "grain",
     hint: "yesterday's rice, redeemed.",
     ingredients: ["rice", "eggs", "cheddar", "onion", "soy sauce"],
   },
   {
+    id: 4,
     title: "melty grilled cheese",
+    prepTimeMin: 8,
     time: "8 min",
-    uses: 2,
-    total: 3,
+    photoUrl: null,
     variant: "cheese",
     hint: "cold, portable, still good.",
     ingredients: ["bread", "cheddar", "pickle"],
   },
   {
+    id: 5,
     title: "spinach & bean stew",
+    prepTimeMin: 22,
     time: "22 min",
-    uses: 3,
-    total: 6,
+    photoUrl: null,
     variant: "beans",
     hint: "one can, one leaf, twenty minutes.",
     ingredients: ["beans", "greens", "onion", "garlic", "tomatoes", "chilli"],
   },
   {
+    id: 6,
     title: "any-fridge rice bowl",
+    prepTimeMin: 10,
     time: "10 min",
-    uses: 4,
-    total: 5,
+    photoUrl: null,
     variant: "eggs",
     hint: "the 11pm bowl you lie about.",
     ingredients: ["rice", "egg", "sesame", "anything green", "chilli"],
@@ -80,11 +85,28 @@ const CARDS: Card[] = [
 export default function Gallery() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
+  const { recipes } = useWeeklyRecipes(FALLBACK_CARDS);
+  // `uses` is display-only: every card reads a full match bar, consistent with
+  // "what came out of the fridge, not what you had to buy" — not a real score.
+  const CARDS: Card[] = recipes.map((r) => ({
+    ...r,
+    uses: r.ingredients.length,
+    total: r.ingredients.length,
+  }));
 
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],
   });
+
+  // Mirror scrollYProgress into a plain MotionValue. Binding scrollYProgress
+  // directly to opacity/transform makes Motion 12 hardware-accelerate via Chrome's
+  // native ScrollTimeline/WAAPI, which wraps back to the first keyframe at the
+  // boundary (cards reappear fully at the bottom — Chrome-only, fine in Firefox).
+  // Driving the transforms off this mirrored value keeps them on the JS/rAF path,
+  // which clamps correctly at the range ends. Zero spring lag (unlike useSpring).
+  const progress = useMotionValue(scrollYProgress.get());
+  useMotionValueEvent(scrollYProgress, "change", (v) => progress.set(v));
 
   const progressBar = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
@@ -93,7 +115,7 @@ export default function Gallery() {
       ref={ref}
       id="recipes"
       className="relative bg-paper"
-      style={{ height: `${CARDS.length * 90}vh` }}
+      style={{ height: `${Math.max(1, CARDS.length) * 90}vh` }}
       aria-label="Recipe gallery"
     >
       <div className="sticky top-0 grid h-screen grid-rows-[auto_1fr_auto] overflow-hidden">
@@ -137,7 +159,7 @@ export default function Gallery() {
               <div className="text-[10px] uppercase tracking-[0.28em] text-ink-mute">
                 now showing
               </div>
-              <LiveMeta scrollYProgress={scrollYProgress} />
+              <LiveMeta cards={CARDS} scrollYProgress={scrollYProgress} />
             </div>
 
             {/* Index dots */}
@@ -147,7 +169,7 @@ export default function Gallery() {
                   key={i}
                   index={i}
                   total={CARDS.length}
-                  scrollYProgress={scrollYProgress}
+                  scrollYProgress={progress}
                 />
               ))}
             </div>
@@ -163,18 +185,14 @@ export default function Gallery() {
             <div className="relative mx-auto flex aspect-[4/5] max-w-[420px] items-center justify-center">
               {CARDS.map((c, i) => (
                 <StackCard
-                  key={c.title}
+                  key={c.id}
                   card={c}
                   index={i}
                   total={CARDS.length}
-                  scrollYProgress={scrollYProgress}
+                  scrollYProgress={progress}
                   reduce={!!reduce}
                 />
               ))}
-            </div>
-            {/* TODO note for the team */}
-            <div className="mx-auto mt-24 max-w-[420px] rounded-md border border-dashed border-ember/60 bg-ember/5 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ember">
-              TODO: feature 6 recipes from the database each week
             </div>
           </div>
           </div>
@@ -196,20 +214,23 @@ export default function Gallery() {
    Live meta (title + time) driven by scroll
    ──────────────────────────────── */
 function LiveMeta({
+  cards,
   scrollYProgress,
 }: {
+  cards: Card[];
   scrollYProgress: MotionValue<number>;
 }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     const update = (v: number) => {
-      const n = Math.min(CARDS.length - 1, Math.floor(v * CARDS.length));
+      const n = Math.min(cards.length - 1, Math.floor(v * cards.length));
       setI(Math.max(0, n));
     };
     update(scrollYProgress.get());
     return scrollYProgress.on("change", update);
-  }, [scrollYProgress]);
-  const card = CARDS[i];
+  }, [scrollYProgress, cards.length]);
+  const card = cards[i];
+  if (!card) return null;
 
   return (
     <div className="min-h-[7rem]">
@@ -259,7 +280,7 @@ function LiveMeta({
         ))}
       </motion.div>
       <div className="mt-3 text-[10px] uppercase tracking-[0.24em] text-ink-mute">
-        №{String(i + 1).padStart(2, "0")} / {String(CARDS.length).padStart(2, "0")}
+        №{String(i + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")}
       </div>
     </div>
   );
@@ -279,7 +300,14 @@ function IndexDot({
 }) {
   const start = index / total;
   const end = (index + 1) / total;
-  const opacity = useTransform(scrollYProgress, [start - 0.02, start, end], [0.2, 1, 0.4]);
+  // Clamp the leading offset to >= 0. A negative first offset makes Motion's
+  // native ScrollTimeline/WAAPI path emit keyframes outside [0,1], which Chrome
+  // rejects with "Offsets must be monotonically non-decreasing", crashing the tree.
+  const opacity = useTransform(
+    scrollYProgress,
+    [Math.max(0, start - 0.02), start, end],
+    [0.2, 1, 0.4]
+  );
   return (
     <motion.span
       style={{ opacity }}
@@ -304,8 +332,14 @@ function StackCard({
   scrollYProgress: MotionValue<number>;
   reduce: boolean;
 }) {
-  const start = index / total;
-  const end = (index + 1) / total;
+  // Reserve a scroll tail so the LAST card also has room to exit. Without it the
+  // final card's end/postExit both pin to 1.0, so it never reaches opacity 0 and
+  // sits fully visible at the bottom of the section. Compress the active band into
+  // [0, 1 - EXIT_TAIL] so every card, including the last, flies out before scroll end.
+  const EXIT_TAIL = 0.08;
+  const span = (1 - EXIT_TAIL) / total;
+  const start = index * span;
+  const end = (index + 1) * span;
   const preStack = Math.max(0, start - 0.06);
   const postExit = Math.min(1, end + 0.06);
 
@@ -349,7 +383,7 @@ function StackCard({
       {/* Plate */}
       <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-paper">
         <div className="absolute inset-0 flex items-center justify-center">
-          <DrawnPlate variant={card.variant} size={280} animated={false} />
+          <PlateImage recipe={card} size={280} />
         </div>
         <span className="absolute left-3 top-3 rounded-full bg-cream/95 px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] text-ink">
           {card.uses}/{card.total} match
