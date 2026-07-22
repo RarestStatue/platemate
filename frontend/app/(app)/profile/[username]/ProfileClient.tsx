@@ -33,6 +33,7 @@ interface ProfileUser {
     id: number;
     text: string;
     createdAt: string;
+    updatedAt: string;
     recipe: { id: number; title: string };
   }[];
 }
@@ -66,10 +67,21 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
             {!user.isSelf && user.viewerIsAuthed && (
               <FollowButton username={user.username} initialFollowing={user.isFollowing} />
             )}
+            {user.isSelf && (
+              <a
+                href="/settings"
+                className="rounded-full border border-border px-4 py-1.5 text-sm text-muted hover:text-foreground"
+              >
+                Edit profile
+              </a>
+            )}
           </div>
           {user.profile?.bio && (
             <p className="text-sm text-muted mt-1">{user.profile.bio}</p>
           )}
+          <p className="text-xs text-muted mt-1">
+            Joined {new Date(user.createdAt).toLocaleDateString("en-CA", { year: "numeric", month: "long" })}
+          </p>
           <div className="flex gap-4 mt-2 text-sm text-muted">
             <span>
               <strong className="text-foreground">
@@ -155,6 +167,9 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
                 <p className="text-sm mt-1">{review.text}</p>
                 <p className="text-xs text-muted mt-1">
                   {new Date(review.createdAt).toLocaleDateString()}
+                  {review.updatedAt !== review.createdAt && (
+                    <span className="italic ml-1">(edited)</span>
+                  )}
                 </p>
               </div>
             ))
