@@ -231,7 +231,7 @@ export default function RecipeDetailClient({
     const text = parentId ? replyText.trim() : commentText.trim();
     if (!text) return;
     try {
-      await fetch(`/api/recipes/${recipe.id}/comments`, {
+      const res = await fetch(`/api/recipes/${recipe.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -239,11 +239,14 @@ export default function RecipeDetailClient({
           parentCommentId: parentId || undefined,
         }),
       });
-      if (parentId) {
-        setReplyText("");
-        setReplyTo(null);
-      } else {
-        setCommentText("");
+      if (res.ok) {
+        if (parentId) {
+          setReplyText("");
+          setReplyTo(null);
+        } else {
+          setCommentText("");
+        }
+        router.refresh();
       }
     } catch {
       // silent
@@ -667,7 +670,7 @@ export default function RecipeDetailClient({
                     @{comment.user.username}
                   </span>
                   <span className="text-xs text-muted">
-                    {new Date(comment.createdAt).toLocaleDateString()}
+                    {new Date(comment.createdAt).toLocaleString()}
                   </span>
                 </div>
                 <p className="text-sm">{comment.text}</p>
@@ -718,7 +721,7 @@ export default function RecipeDetailClient({
                       @{reply.user.username}
                     </span>
                     <span className="text-xs text-muted">
-                      {new Date(reply.createdAt).toLocaleDateString()}
+                      {new Date(reply.createdAt).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-sm">{reply.text}</p>

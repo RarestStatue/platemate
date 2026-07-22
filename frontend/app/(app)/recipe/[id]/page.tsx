@@ -55,7 +55,7 @@ export default async function RecipeDetailPage({
             orderBy: { createdAt: "asc" },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: "asc" },
         take: 50,
       },
     },
