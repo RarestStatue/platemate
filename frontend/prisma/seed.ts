@@ -42,7 +42,8 @@ async function main() {
           username,
           email,
           passwordHash,
-          profile: { create: { bio, avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${username}` } },
+          // homechef intentionally has no avatar to demonstrate the default-avatar fallback
+          profile: { create: { bio, avatarUrl: username === "homechef" ? null : `https://api.dicebear.com/7.x/initials/svg?seed=${username}` } },
           dietaryRestrictions: { create: {} },
         },
       })

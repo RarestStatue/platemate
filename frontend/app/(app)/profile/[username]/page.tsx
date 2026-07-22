@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProfileClient from "./ProfileClient";
 import { getAllergens } from "@/lib/allergens";
+import { auth } from "@/lib/auth";
 
 export default async function ProfilePage({
   params,
@@ -58,11 +59,26 @@ export default async function ProfilePage({
   if (!user || user.deletedAt) notFound();
   if (user.profile && !user.profile.isPublic) notFound();
 
+  const session = await auth();
+  const viewerId = session?.user?.id ? parseInt(session.user.id, 10) : null;
+  const isSelf = viewerId === user.id;
+  let isFollowing = false;
+  if (viewerId && !isSelf) {
+    const rel = await prisma.userFollow.findUnique({
+      where: { followerId_followingId: { followerId: viewerId, followingId: user.id } },
+      select: { followerId: true },
+    });
+    isFollowing = !!rel;
+  }
+
   // SECURITY: strip internal deletedAt field before sending to the client
   const { deletedAt: _deleted, ...publicUser } = user;
   const serialized = {
     ...publicUser,
     createdAt: user.createdAt.toISOString(),
+    isSelf,
+    isFollowing,
+    viewerIsAuthed: viewerId !== null,
     recipes: user.recipes.map((r) => {
       const {
         hasPeanuts: _hasPeanuts,

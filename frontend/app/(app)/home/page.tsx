@@ -100,6 +100,51 @@ async function getTrendingNow(): Promise<RecipeCardData[]> {
   }
 }
 
+async function getFollowingRecipes(userId: number): Promise<RecipeCardData[]> {
+  try {
+    const follows = await prisma.userFollow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
+    const followingIds = follows.map((f) => f.followingId);
+    if (followingIds.length === 0) return [];
+
+    const recipes = await prisma.recipe.findMany({
+      where: { creatorId: { in: followingIds }, creator: { deletedAt: null } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        prepTimeMin: true,
+        avgRating: true,
+        photoUrl: true,
+        saveCount: true,
+        creator: { select: { username: true } },
+        hasPeanuts: true,
+        hasTreeNuts: true,
+        hasShellfish: true,
+        hasDairy: true,
+        hasGluten: true,
+        hasEggs: true,
+      },
+    });
+
+    return recipes.map((r) => ({
+      id: r.id,
+      title: r.title,
+      prepTimeMin: r.prepTimeMin,
+      avgRating: r.avgRating,
+      photoUrl: r.photoUrl,
+      saveCount: r.saveCount,
+      creatorUsername: r.creator.username,
+      allergens: getAllergens(r),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function safeAuth() {
   try {
     return await auth();
@@ -124,6 +169,10 @@ export default async function HomePage() {
     getNewRecipes(),
     getTrendingNow(),
   ]);
+
+  const following = session?.user?.id
+    ? await getFollowingRecipes(parseInt(session.user.id, 10))
+    : [];
 
   const name =
     session?.user?.name?.split(" ")[0] ??
@@ -296,6 +345,21 @@ export default async function HomePage() {
         </div>
         <TrendingHero recipes={trendingNow} />
       </section>
+
+      {/* Following feed */}
+      {following.length > 0 && (
+        <section className="mb-10 md:mb-14">
+          <div className="mb-4 flex items-end justify-between md:mb-6">
+            <div>
+              <p className="eyebrow mb-2 hidden md:block">Section IV</p>
+              <h2 className="display text-[clamp(1.75rem,4vw,3.5rem)]">
+                From people you <span className="italic text-matcha">follow</span>.
+              </h2>
+            </div>
+          </div>
+          <TrendingHero recipes={following} />
+        </section>
+      )}
     </div>
   );
 }
