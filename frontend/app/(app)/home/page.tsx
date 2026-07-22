@@ -245,7 +245,7 @@ export default async function HomePage() {
             </h2>
             <p className="mt-4 max-w-md text-ink-soft">
               The average Canadian household bins $1,300 of edible food every year.
-              Platemate ranks recipes by what&apos;s already in your fridge —
+              Platemate ranks recipes by what&apos;s already in your fridge -
               so nothing rots at the back of the drawer.
             </p>
           </div>

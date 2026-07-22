@@ -17,7 +17,7 @@ const sans = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "platemate — cook what you already have",
+  title: "platemate - cook what you already have",
   description:
     "For students who can't be bothered to shop. Snap your fridge, get a plate. No waste, no faff.",
   applicationName: "platemate",

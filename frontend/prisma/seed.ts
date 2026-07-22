@@ -308,12 +308,21 @@ async function main() {
   }
 
   for (let i = 0; i < recipes.length; i++) {
+    const reviewerId = users[(i + 2) % users.length].id;
+    const reviewRating = 4 + (i % 2);
+
     await prisma.recipeReview.create({
       data: {
         recipeId: recipes[i].id,
-        userId: users[(i + 2) % users.length].id,
+        userId: reviewerId,
         text: ["Super easy and tasted great.", "Perfect after class.", "Cheap, quick, and filling.", "Would definitely make again."][i % 4],
       },
+    });
+
+    await prisma.recipeRating.upsert({
+      where: { recipeId_userId: { recipeId: recipes[i].id, userId: reviewerId } },
+      create: { recipeId: recipes[i].id, userId: reviewerId, rating: reviewRating },
+      update: { rating: reviewRating },
     });
 
     await prisma.recipeComment.create({

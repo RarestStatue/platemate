@@ -24,7 +24,7 @@ const PILLARS: Pillar[] = [
     n: "01",
     tag: "speed",
     title: "ready in the time it takes to reheat leftovers.",
-    body: "Sort by 10-minute snacks up to weekend feasts. No epic marinades, no niche gadgets — food you can make between lectures.",
+    body: "Sort by 10-minute snacks up to weekend feasts. No epic marinades, no niche gadgets - food you can make between lectures.",
     stat: { n: "17 min", label: "median cook time across the index" },
   },
   {

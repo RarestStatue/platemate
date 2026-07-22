@@ -20,7 +20,7 @@ const testimonials: Testimonial[] = [
     tag: "shared kitchen",
   },
   {
-    text: "opened it thinking yeah right — cooked six things this week from the same fridge.",
+    text: "opened it thinking yeah right - cooked six things this week from the same fridge.",
     name: "jules",
     role: "waterloo · eng",
     tag: "convert",

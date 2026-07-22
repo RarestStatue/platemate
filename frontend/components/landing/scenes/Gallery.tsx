@@ -153,7 +153,7 @@ export default function Gallery() {
             </div>
 
             <p className="mt-8 max-w-sm text-sm text-ink-mute">
-              Scroll to browse. Each plate lists what came out of the fridge —
+              Scroll to browse. Each plate lists what came out of the fridge -
               not what you had to buy.
             </p>
           </div>

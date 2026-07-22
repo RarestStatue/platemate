@@ -326,7 +326,7 @@ export default function FridgeDemo() {
                   exit={{ opacity: 0 }}
                   className="mt-4 font-serif text-sm italic text-ink-mute"
                 >
-                  keep scrolling — we&apos;ll fill the shelves.
+                  keep scrolling - we&apos;ll fill the shelves.
                 </motion.p>
               )}
             </AnimatePresence>

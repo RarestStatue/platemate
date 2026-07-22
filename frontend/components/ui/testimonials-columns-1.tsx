@@ -63,7 +63,7 @@ export const TestimonialsColumn = (props: {
                   </span>
                   <div className="flex min-w-0 flex-col">
                     <span className="truncate font-serif text-base leading-5 text-ink">
-                      — {t.name}
+                      - {t.name}
                     </span>
                     <span className="truncate text-[10px] uppercase tracking-[0.24em] leading-5 text-ink-mute">
                       {t.role}

@@ -63,6 +63,15 @@ export default async function RecipeDetailPage({
 
   if (!recipe) notFound();
 
+  const reviewerIds = recipe.reviews.map((r) => r.userId);
+  const ratings = reviewerIds.length
+    ? await prisma.recipeRating.findMany({
+        where: { recipeId, userId: { in: reviewerIds } },
+        select: { userId: true, rating: true },
+      })
+    : [];
+  const ratingByUser = new Map(ratings.map((r) => [r.userId, r.rating]));
+
   const session = await auth();
   let isSaved = false;
   let userRating: number | null = null;
@@ -119,6 +128,7 @@ export default async function RecipeDetailPage({
       substitutes: i.ingredient.substitutionsFrom.map((s) => ({
         name: s.substituteIngredient.displayName,
         flavorImpact: s.flavorImpact,
+        notes: s.notes ?? null,
       })),
     })),
     steps: recipe.steps.map((s) => ({
@@ -129,6 +139,7 @@ export default async function RecipeDetailPage({
       ...r,
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
+      rating: ratingByUser.get(r.userId) ?? null,
     })),
     comments: recipe.comments.map((c) => ({
       ...c,
@@ -142,6 +153,20 @@ export default async function RecipeDetailPage({
     })),
   };
 
+  const myReview = session?.user?.id
+    ? recipe.reviews.find((r) => r.userId === parseInt(session.user.id, 10)) ?? null
+    : null;
+
+  const currentUserReview = myReview
+    ? {
+        id: myReview.id,
+        text: myReview.text,
+        rating: ratingByUser.get(myReview.userId) ?? 0,
+        createdAt: myReview.createdAt.toISOString(),
+        updatedAt: myReview.updatedAt.toISOString(),
+      }
+    : null;
+
   return (
     <RecipeDetailClient
       recipe={serialized}
@@ -149,6 +174,7 @@ export default async function RecipeDetailPage({
       userRating={userRating}
       currentUserId={session?.user?.id ? parseInt(session.user.id, 10) : null}
       shoppingListIngredientIds={shoppingListIngredientIds}
+      currentUserReview={currentUserReview}
     />
   );
 }
