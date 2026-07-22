@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe("PATCH /api/recipes/[id]/reviews", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    vi.mocked(auth).mockResolvedValue(null as never);
     const res = await PATCH(req("PATCH", { text: "great", rating: 5 }), ctx("1"));
     expect(res.status).toBe(401);
     expect(findUniqueMock).not.toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe("PATCH /api/recipes/[id]/reviews", () => {
 
 describe("DELETE /api/recipes/[id]/reviews", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    vi.mocked(auth).mockResolvedValue(null as never);
     const res = await DELETE(req("DELETE"), ctx("1"));
     expect(res.status).toBe(401);
     expect(findUniqueMock).not.toHaveBeenCalled();

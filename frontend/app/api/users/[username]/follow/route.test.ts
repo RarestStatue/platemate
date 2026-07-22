@@ -43,7 +43,7 @@ beforeEach(() => {
 
 describe("POST /api/users/[username]/follow", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    vi.mocked(auth).mockResolvedValue(null as never);
     const res = await POST(req("POST"), ctx("chefjosh"));
     expect(res.status).toBe(401);
     expect(findUniqueMock).not.toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe("POST /api/users/[username]/follow", () => {
 
 describe("DELETE /api/users/[username]/follow", () => {
   it("returns 401 when unauthenticated", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    vi.mocked(auth).mockResolvedValue(null as never);
     const res = await DELETE(req("DELETE"), ctx("chefjosh"));
     expect(res.status).toBe(401);
     expect(deleteManyMock).not.toHaveBeenCalled();
