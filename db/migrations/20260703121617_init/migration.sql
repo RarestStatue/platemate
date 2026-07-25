@@ -196,11 +196,21 @@ CREATE TABLE "recipe_comments" (
     "recipe_id" INTEGER NOT NULL,
     "user_id" INTEGER NOT NULL,
     "text" TEXT NOT NULL,
+    "like_count" INTEGER NOT NULL DEFAULT 0,
     "parent_comment_id" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "recipe_comments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "recipe_comment_likes" (
+    "comment_id" INTEGER NOT NULL,
+    "user_id" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "recipe_comment_likes_pkey" PRIMARY KEY ("comment_id","user_id")
 );
 
 -- CreateTable
@@ -335,6 +345,9 @@ CREATE INDEX "recipe_comments_recipe_id_idx" ON "recipe_comments"("recipe_id");
 CREATE INDEX "recipe_comments_parent_comment_id_idx" ON "recipe_comments"("parent_comment_id");
 
 -- CreateIndex
+CREATE INDEX "recipe_comment_likes_user_id_idx" ON "recipe_comment_likes"("user_id");
+
+-- CreateIndex
 CREATE INDEX "recipes_creator_id_idx" ON "recipes"("creator_id");
 
 -- CreateIndex
@@ -417,6 +430,12 @@ ALTER TABLE "recipe_comments" ADD CONSTRAINT "recipe_comments_user_id_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "recipe_comments" ADD CONSTRAINT "recipe_comments_parent_comment_id_fkey" FOREIGN KEY ("parent_comment_id") REFERENCES "recipe_comments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "recipe_comment_likes" ADD CONSTRAINT "recipe_comment_likes_comment_id_fkey" FOREIGN KEY ("comment_id") REFERENCES "recipe_comments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "recipe_comment_likes" ADD CONSTRAINT "recipe_comment_likes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "recipe_view_daily" ADD CONSTRAINT "recipe_view_daily_recipe_id_fkey" FOREIGN KEY ("recipe_id") REFERENCES "recipes"("id") ON DELETE CASCADE ON UPDATE CASCADE;

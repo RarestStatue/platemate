@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProfileClient from "./ProfileClient";
 import { getAllergens } from "@/lib/allergens";
+import { attachRatings } from "@/lib/profile";
 import { auth } from "@/lib/auth";
 
 export default async function ProfilePage({
@@ -52,6 +53,43 @@ export default async function ProfilePage({
           recipe: { select: { id: true, title: true } },
         },
       },
+      saves: {
+        orderBy: { savedAt: "desc" },
+        take: 20,
+        select: {
+          savedAt: true,
+          recipe: {
+            select: {
+              id: true,
+              title: true,
+              prepTimeMin: true,
+              avgRating: true,
+              photoUrl: true,
+              saveCount: true,
+              creator: { select: { username: true } },
+              hasPeanuts: true,
+              hasTreeNuts: true,
+              hasShellfish: true,
+              hasDairy: true,
+              hasGluten: true,
+              hasEggs: true,
+            },
+          },
+        },
+      },
+      comments: {
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          text: true,
+          createdAt: true,
+          recipe: { select: { id: true, title: true } },
+        },
+      },
+      ratings: {
+        select: { recipeId: true, rating: true },
+      },
     },
   });
 
@@ -71,8 +109,16 @@ export default async function ProfilePage({
     isFollowing = !!rel;
   }
 
-  // SECURITY: strip internal deletedAt field before sending to the client
-  const { deletedAt: _deleted, ...publicUser } = user;
+  // SECURITY: strip internal deletedAt field before sending to the client.
+  // saves/comments/ratings are re-shaped below, so keep the raw Prisma objects
+  // (which carry Date values) out of the client payload.
+  const {
+    deletedAt: _deleted,
+    saves: _saves,
+    comments: _comments,
+    ratings: _ratings,
+    ...publicUser
+  } = user;
   const serialized = {
     ...publicUser,
     createdAt: user.createdAt.toISOString(),
@@ -95,10 +141,26 @@ export default async function ProfilePage({
         allergens: getAllergens(r),
       };
     }),
-    reviews: user.reviews.map((r) => ({
+    reviews: attachRatings(user.reviews, user.ratings).map((r) => ({
       ...r,
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
+    })),
+    favourites: user.saves.map((s) => ({
+      id: s.recipe.id,
+      title: s.recipe.title,
+      prepTimeMin: s.recipe.prepTimeMin,
+      avgRating: s.recipe.avgRating,
+      photoUrl: s.recipe.photoUrl,
+      saveCount: s.recipe.saveCount,
+      creatorUsername: s.recipe.creator.username,
+      allergens: getAllergens(s.recipe),
+    })),
+    comments: user.comments.map((c) => ({
+      id: c.id,
+      text: c.text,
+      createdAt: c.createdAt.toISOString(),
+      recipe: c.recipe,
     })),
   };
 

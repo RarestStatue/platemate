@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import RecipeDetailClient from "./RecipeDetailClient";
+import type { UserRestrictions } from "@/lib/substitutions";
 
 export default async function RecipeDetailPage({
   params,
@@ -76,11 +77,13 @@ export default async function RecipeDetailPage({
   let isSaved = false;
   let userRating: number | null = null;
   let shoppingListIngredientIds: number[] = [];
+  let restrictions: UserRestrictions | null = null;
+  let likedCommentIds: number[] = [];
 
   if (session?.user?.id) {
     const userId = parseInt(session.user.id, 10);
     const recipeIngredientIds = recipe.ingredients.map((i) => i.ingredient.id);
-    const [save, rating, shoppingItems] = await Promise.all([
+    const [save, rating, shoppingItems, dietary] = await Promise.all([
       prisma.userRecipeSave.findUnique({
         where: { userId_recipeId: { userId, recipeId } },
       }),
@@ -96,12 +99,34 @@ export default async function RecipeDetailPage({
         },
         select: { ingredientId: true },
       }),
+      prisma.userDietaryRestriction.findUnique({
+        where: { userId },
+        select: {
+          vegetarian: true,
+          vegan: true,
+          glutenFree: true,
+          dairyFree: true,
+        },
+      }),
     ]);
     isSaved = !!save;
     userRating = rating?.rating ?? null;
     shoppingListIngredientIds = shoppingItems
       .map((i) => i.ingredientId)
       .filter((id): id is number => id !== null);
+    restrictions = dietary ?? null;
+
+    const allCommentIds = recipe.comments.flatMap((c) => [
+      c.id,
+      ...c.replies.map((r) => r.id),
+    ]);
+    const likes = allCommentIds.length
+      ? await prisma.recipeCommentLike.findMany({
+          where: { userId, commentId: { in: allCommentIds } },
+          select: { commentId: true },
+        })
+      : [];
+    likedCommentIds = likes.map((l) => l.commentId);
   }
 
   // Serialize for client
@@ -129,6 +154,10 @@ export default async function RecipeDetailPage({
         name: s.substituteIngredient.displayName,
         flavorImpact: s.flavorImpact,
         notes: s.notes ?? null,
+        vegetarian: s.vegetarian,
+        vegan: s.vegan,
+        glutenFree: s.glutenFree,
+        dairyFree: s.dairyFree,
       })),
     })),
     steps: recipe.steps.map((s) => ({
@@ -175,6 +204,8 @@ export default async function RecipeDetailPage({
       currentUserId={session?.user?.id ? parseInt(session.user.id, 10) : null}
       shoppingListIngredientIds={shoppingListIngredientIds}
       currentUserReview={currentUserReview}
+      restrictions={restrictions}
+      likedCommentIds={likedCommentIds}
     />
   );
 }
