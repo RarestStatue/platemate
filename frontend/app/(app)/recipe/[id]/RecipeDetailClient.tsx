@@ -12,16 +12,26 @@ import {
   IconAlertTriangle,
   IconMinus,
   IconPlus,
+  IconThumbUp,
+  IconThumbUpFilled,
 } from "@tabler/icons-react";
 import { useServingStore } from "@/stores/useServingStore";
 import { useHaveIngredientsStore } from "@/stores/useHaveIngredientsStore";
 import { normalizeIngredientName } from "@/lib/ingredients";
+import {
+  evaluateSubstitute,
+  type UserRestrictions,
+} from "@/lib/substitutions";
 import clsx from "clsx";
 
 interface Substitute {
   name: string;
   flavorImpact: string;
   notes: string | null;
+  vegetarian: boolean;
+  vegan: boolean;
+  glutenFree: boolean;
+  dairyFree: boolean;
 }
 
 interface Ingredient {
@@ -58,6 +68,7 @@ interface CommentReply {
   text: string;
   createdAt: string;
   parentCommentId: number | null;
+  likeCount: number;
   user: { id: number; username: string };
 }
 
@@ -66,6 +77,7 @@ interface Comment {
   text: string;
   createdAt: string;
   parentCommentId: number | null;
+  likeCount: number;
   user: { id: number; username: string };
   replies: CommentReply[];
 }
@@ -107,6 +119,8 @@ interface RecipeProps {
     createdAt: string;
     updatedAt: string;
   } | null;
+  restrictions: UserRestrictions | null;
+  likedCommentIds: number[];
 }
 
 export default function RecipeDetailClient({
@@ -116,6 +130,8 @@ export default function RecipeDetailClient({
   currentUserId,
   shoppingListIngredientIds,
   currentUserReview,
+  restrictions,
+  likedCommentIds,
 }: RecipeProps) {
   const router = useRouter();
   const [saved, setSaved] = useState(initialSaved);
@@ -129,6 +145,12 @@ export default function RecipeDetailClient({
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [likedIds, setLikedIds] = useState<Set<number>>(
+    () => new Set(likedCommentIds)
+  );
+  // Overrides only; anything not toggled this session falls back to the
+  // server-rendered count, so refreshed comments still show a number.
+  const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
   const [reviewText, setReviewText] = useState(currentUserReview?.text ?? "");
   const [reviewRating, setReviewRating] = useState(currentUserReview?.rating ?? 0);
   const isEditingReview = currentUserReview !== null;
@@ -251,6 +273,51 @@ export default function RecipeDetailClient({
     } catch {
       // silent
     }
+  }
+
+  async function deleteComment(commentId: number) {
+    if (!currentUserId) return;
+    try {
+      const res = await fetch(
+        `/api/recipes/${recipe.id}/comments?commentId=${commentId}`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        if (replyTo === commentId) {
+          setReplyTo(null);
+          setReplyText("");
+        }
+        router.refresh();
+      }
+    } catch {
+      // silent
+    }
+  }
+
+  async function toggleCommentLike(commentId: number) {
+    if (!currentUserId) return;
+    const liked = likedIds.has(commentId);
+    try {
+      const res = await fetch(
+        `/api/recipes/${recipe.id}/comments/${commentId}/like`,
+        { method: liked ? "DELETE" : "POST" }
+      );
+      if (!res.ok) return;
+      const data: { liked: boolean; likeCount: number } = await res.json();
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (data.liked) next.add(commentId);
+        else next.delete(commentId);
+        return next;
+      });
+      setLikeCounts((prev) => ({ ...prev, [commentId]: data.likeCount }));
+    } catch {
+      // silent
+    }
+  }
+
+  function likeCountFor(c: { id: number; likeCount: number }): number {
+    return likeCounts[c.id] ?? c.likeCount;
   }
 
   function formatQuantity(qty: number): string {
@@ -504,14 +571,38 @@ export default function RecipeDetailClient({
                       </div>
 
                       {ing.substitutes.length > 0 && (
-                        <div className="text-muted space-y-0.5">
-                          {ing.substitutes.map((s, idx) => (
-                            <p key={idx}>
-                              Swap: <span className="font-medium">{s.name}</span> - {" "}
-                              {s.flavorImpact}
-                              {s.notes ? ` (${s.notes})` : ""}
-                            </p>
-                          ))}
+                        <div className="space-y-1">
+                          {ing.substitutes.map((s, idx) => {
+                            const { verdict, reasons } = evaluateSubstitute(
+                              s,
+                              restrictions
+                            );
+                            return (
+                              <div key={idx} className="text-muted">
+                                <p>
+                                  Swap:{" "}
+                                  <span className="font-medium">{s.name}</span> -{" "}
+                                  {s.flavorImpact}
+                                  {s.notes ? ` (${s.notes})` : ""}
+                                </p>
+                                {verdict === "conflict" && (
+                                  <p className="text-warn-text font-medium">
+                                    Breaks your diet: {reasons.join(", ")}
+                                  </p>
+                                )}
+                                {verdict === "improves" && (
+                                  <p className="text-matcha font-medium">
+                                    Also makes it {reasons.join(", ")}
+                                  </p>
+                                )}
+                                {verdict === "compatible" && (
+                                  <p className="text-matcha">
+                                    Keeps it {reasons.join(", ")}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -674,15 +765,46 @@ export default function RecipeDetailClient({
                   </span>
                 </div>
                 <p className="text-sm">{comment.text}</p>
-                {currentUserId && (
-                  <button
-                    onClick={() =>
-                      setReplyTo(replyTo === comment.id ? null : comment.id)
-                    }
-                    className="text-xs text-red mt-1 hover:underline"
-                  >
-                    Reply
-                  </button>
+                {currentUserId ? (
+                  <div className="mt-1 flex items-center gap-3">
+                    <button
+                      onClick={() => toggleCommentLike(comment.id)}
+                      className="flex items-center gap-1 text-xs text-muted hover:text-red"
+                      aria-label={
+                        likedIds.has(comment.id)
+                          ? "Unlike comment"
+                          : "Like comment"
+                      }
+                    >
+                      {likedIds.has(comment.id) ? (
+                        <IconThumbUpFilled size={14} className="text-red" />
+                      ) : (
+                        <IconThumbUp size={14} />
+                      )}
+                      {likeCountFor(comment)}
+                    </button>
+                    <button
+                      onClick={() =>
+                        setReplyTo(replyTo === comment.id ? null : comment.id)
+                      }
+                      className="text-xs text-red hover:underline"
+                    >
+                      Reply
+                    </button>
+                    {comment.user.id === currentUserId && (
+                      <button
+                        onClick={() => deleteComment(comment.id)}
+                        className="text-xs text-muted hover:text-red hover:underline"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-center gap-1 text-xs text-muted">
+                    <IconThumbUp size={14} />
+                    {likeCountFor(comment)}
+                  </div>
                 )}
               </div>
 
@@ -725,6 +847,39 @@ export default function RecipeDetailClient({
                     </span>
                   </div>
                   <p className="text-sm">{reply.text}</p>
+                  {currentUserId ? (
+                    <div className="mt-1 flex items-center gap-3">
+                      <button
+                        onClick={() => toggleCommentLike(reply.id)}
+                        className="flex items-center gap-1 text-xs text-muted hover:text-red"
+                        aria-label={
+                          likedIds.has(reply.id)
+                            ? "Unlike reply"
+                            : "Like reply"
+                        }
+                      >
+                        {likedIds.has(reply.id) ? (
+                          <IconThumbUpFilled size={14} className="text-red" />
+                        ) : (
+                          <IconThumbUp size={14} />
+                        )}
+                        {likeCountFor(reply)}
+                      </button>
+                      {currentUserId === reply.user.id && (
+                        <button
+                          onClick={() => deleteComment(reply.id)}
+                          className="text-xs text-muted hover:text-red hover:underline"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-1 flex items-center gap-1 text-xs text-muted">
+                      <IconThumbUp size={14} />
+                      {likeCountFor(reply)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

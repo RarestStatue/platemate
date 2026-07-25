@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { IconClock, IconStar, IconFlame, IconAlertTriangle } from "@tabler/icons-react";
 import clsx from "clsx";
+import CardSaveButton from "./CardSaveButton";
 
 interface RecipeCardProps {
   id: number;
@@ -14,6 +15,8 @@ interface RecipeCardProps {
   isPopular?: boolean;
   rank?: number;
   allergens?: string[];
+  /** Opt-in: pass the viewer's saved state to render a save toggle on the card. */
+  isSaved?: boolean;
 }
 
 /**
@@ -31,6 +34,7 @@ export default function RecipeCard({
   isPopular,
   rank,
   allergens,
+  isSaved,
 }: RecipeCardProps) {
   let badge: { text: string; className: string } | null = null;
 
@@ -90,6 +94,11 @@ export default function RecipeCard({
           >
             {badge.text}
           </span>
+        )}
+
+        {/* Ranked strips already occupy left-3 top-3, so skip the toggle there. */}
+        {isSaved !== undefined && rank === undefined && (
+          <CardSaveButton recipeId={id} initialSaved={isSaved} />
         )}
       </div>
 

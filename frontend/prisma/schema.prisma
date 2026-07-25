@@ -35,6 +35,7 @@ model User {
   ratings             RecipeRating[]
   reviews             RecipeReview[]
   comments            RecipeComment[]
+  commentLikes        RecipeCommentLike[]
   saves               UserRecipeSave[]
   pantry              UserPantry[]
   shoppingList        ShoppingListItem[]
@@ -266,6 +267,7 @@ model RecipeComment {
   recipeId        Int      @map("recipe_id")
   userId          Int      @map("user_id")
   text            String
+  likeCount       Int      @default(0) @map("like_count")
   parentCommentId Int?     @map("parent_comment_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -274,10 +276,24 @@ model RecipeComment {
   user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent  RecipeComment?  @relation("commentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
   replies RecipeComment[] @relation("commentThread")
+  likes   RecipeCommentLike[]
 
   @@index([recipeId])
   @@index([parentCommentId])
   @@map("recipe_comments")
+}
+
+model RecipeCommentLike {
+  commentId Int      @map("comment_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  comment RecipeComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@index([userId])
+  @@map("recipe_comment_likes")
 }
 
 model UserRecipeSave {

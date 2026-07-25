@@ -82,3 +82,67 @@ export async function POST(
     return Response.json({ error: "Failed to create comment" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const recipeId = parseInt(id, 10);
+    if (isNaN(recipeId)) {
+      return Response.json({ error: "Invalid recipe ID" }, { status: 400 });
+    }
+
+    const commentId = parseInt(
+      request.nextUrl.searchParams.get("commentId") ?? "",
+      10
+    );
+    if (isNaN(commentId)) {
+      return Response.json({ error: "Invalid comment ID" }, { status: 400 });
+    }
+
+    const userId = parseInt(session.user.id, 10);
+
+    const comment = await prisma.recipeComment.findUnique({
+      where: { id: commentId },
+      select: {
+        id: true,
+        userId: true,
+        recipeId: true,
+        _count: { select: { replies: true } },
+      },
+    });
+    if (!comment || comment.recipeId !== recipeId) {
+      return Response.json({ error: "Comment not found" }, { status: 404 });
+    }
+    if (comment.userId !== userId) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Replies cascade at the DB level, so the counter drops by comment + replies
+    const removed = 1 + comment._count.replies;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.recipeComment.delete({ where: { id: commentId } });
+
+      await tx.recipe.update({
+        where: { id: recipeId },
+        data: {
+          commentCount: { decrement: removed },
+          lastEngagementAt: new Date(),
+        },
+      });
+    });
+
+    return Response.json({ message: "Comment deleted", removed });
+  } catch (error) {
+    console.error("Comment deletion error:", error);
+    return Response.json({ error: "Failed to delete comment" }, { status: 500 });
+  }
+}
