@@ -11,6 +11,7 @@ import {
   IconPlus,
   IconHeart,
   IconUser,
+  IconSettings,
 } from "@tabler/icons-react";
 import clsx from "clsx";
 import LogoMark from "@/components/landing/LogoMark";
@@ -97,6 +98,17 @@ export default function Header() {
             className="rounded-full p-2 text-ink-soft transition hover:bg-ink/5 hover:text-ink"
           >
             <IconBell size={20} strokeWidth={1.5} aria-hidden />
+          </Link>
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            aria-current={pathname === "/settings" ? "page" : undefined}
+            className={clsx(
+              "rounded-full p-2 transition hover:bg-ink/5 hover:text-ink",
+              pathname === "/settings" ? "bg-ink/5 text-ink" : "text-ink-soft"
+            )}
+          >
+            <IconSettings size={20} strokeWidth={1.5} aria-hidden />
           </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

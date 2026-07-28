@@ -12,7 +12,9 @@ export default async function ProfilePage({
 }) {
   const { username } = await params;
 
-  const user = await prisma.user.findUnique({
+  // Phase 1: identity + privacy only. No activity is queried until the viewer
+  // has been cleared, so a private profile can't leak through a serialization slip.
+  const base = await prisma.user.findUnique({
     where: { username },
     select: {
       id: true,
@@ -28,6 +30,70 @@ export default async function ProfilePage({
           reviewCount: true,
         },
       },
+    },
+  });
+
+  // SECURITY: treat deleted users as not found
+  if (!base || base.deletedAt) notFound();
+
+  const session = await auth();
+  const viewerId = session?.user?.id ? parseInt(session.user.id, 10) : null;
+  const isSelf = viewerId === base.id;
+
+  let isFollowing = false;
+  if (viewerId && !isSelf) {
+    const rel = await prisma.userFollow.findUnique({
+      where: {
+        followerId_followingId: { followerId: viewerId, followingId: base.id },
+      },
+      select: { followerId: true },
+    });
+    isFollowing = !!rel;
+  }
+
+  // SOC-1.2: a private profile is visible to its owner in full; everyone else
+  // gets the shell (avatar, name, bio, follow button) with no activity and no counts.
+  const isPrivateView = !isSelf && base.profile !== null && !base.profile.isPublic;
+
+  const shell = {
+    id: base.id,
+    username: base.username,
+    createdAt: base.createdAt.toISOString(),
+    isSelf,
+    isFollowing,
+    viewerIsAuthed: viewerId !== null,
+  };
+
+  if (isPrivateView) {
+    return (
+      <ProfileClient
+        user={{
+          ...shell,
+          isPrivateView: true,
+          profile: base.profile
+            ? {
+                bio: base.profile.bio,
+                avatarUrl: base.profile.avatarUrl,
+                isPublic: false,
+                // zeroed on purpose: counts are activity aggregates and the
+                // private view never renders them
+                recipeCount: 0,
+                reviewCount: 0,
+              }
+            : null,
+          recipes: [],
+          reviews: [],
+          favourites: [],
+          comments: [],
+        }}
+      />
+    );
+  }
+
+  // Phase 2: the viewer is the owner or the profile is public — load the activity.
+  const activity = await prisma.user.findUnique({
+    where: { id: base.id },
+    select: {
       recipes: {
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -93,39 +159,15 @@ export default async function ProfilePage({
     },
   });
 
-  // SECURITY: treat deleted users as not found, and block private profiles
-  if (!user || user.deletedAt) notFound();
-  if (user.profile && !user.profile.isPublic) notFound();
+  if (!activity) notFound();
 
-  const session = await auth();
-  const viewerId = session?.user?.id ? parseInt(session.user.id, 10) : null;
-  const isSelf = viewerId === user.id;
-  let isFollowing = false;
-  if (viewerId && !isSelf) {
-    const rel = await prisma.userFollow.findUnique({
-      where: { followerId_followingId: { followerId: viewerId, followingId: user.id } },
-      select: { followerId: true },
-    });
-    isFollowing = !!rel;
-  }
-
-  // SECURITY: strip internal deletedAt field before sending to the client.
-  // saves/comments/ratings are re-shaped below, so keep the raw Prisma objects
-  // (which carry Date values) out of the client payload.
-  const {
-    deletedAt: _deleted,
-    saves: _saves,
-    comments: _comments,
-    ratings: _ratings,
-    ...publicUser
-  } = user;
+  // Fields are listed explicitly (rather than spread-and-strip) so internal
+  // columns like deletedAt can never reach the client payload.
   const serialized = {
-    ...publicUser,
-    createdAt: user.createdAt.toISOString(),
-    isSelf,
-    isFollowing,
-    viewerIsAuthed: viewerId !== null,
-    recipes: user.recipes.map((r) => {
+    ...shell,
+    isPrivateView: false,
+    profile: base.profile,
+    recipes: activity.recipes.map((r) => {
       const {
         hasPeanuts: _hasPeanuts,
         hasTreeNuts: _hasTreeNuts,
@@ -137,16 +179,16 @@ export default async function ProfilePage({
       } = r;
       return {
         ...rest,
-        creatorUsername: user.username,
+        creatorUsername: base.username,
         allergens: getAllergens(r),
       };
     }),
-    reviews: attachRatings(user.reviews, user.ratings).map((r) => ({
+    reviews: attachRatings(activity.reviews, activity.ratings).map((r) => ({
       ...r,
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
     })),
-    favourites: user.saves.map((s) => ({
+    favourites: activity.saves.map((s) => ({
       id: s.recipe.id,
       title: s.recipe.title,
       prepTimeMin: s.recipe.prepTimeMin,
@@ -156,7 +198,7 @@ export default async function ProfilePage({
       creatorUsername: s.recipe.creator.username,
       allergens: getAllergens(s.recipe),
     })),
-    comments: user.comments.map((c) => ({
+    comments: activity.comments.map((c) => ({
       id: c.id,
       text: c.text,
       createdAt: c.createdAt.toISOString(),
