@@ -43,7 +43,14 @@ async function main() {
           email,
           passwordHash,
           // homechef intentionally has no avatar to demonstrate the default-avatar fallback
-          profile: { create: { bio, avatarUrl: username === "homechef" ? null : `https://api.dicebear.com/7.x/initials/svg?seed=${username}` } },
+          // chefjayvyn is seeded private to demonstrate SOC-1.2 (locked profile shell)
+          profile: {
+            create: {
+              bio,
+              avatarUrl: username === "homechef" ? null : `https://api.dicebear.com/7.x/initials/svg?seed=${username}`,
+              isPublic: username !== "chefjayvyn",
+            },
+          },
           dietaryRestrictions: { create: {} },
         },
       })

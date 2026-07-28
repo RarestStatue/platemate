@@ -113,6 +113,10 @@ export const shoppingListDeleteSchema = z.object({
   id: z.number().int().positive(),
 });
 
+export const privacySchema = z.object({
+  isPublic: z.boolean(),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type RecipeUploadInput = z.infer<typeof recipeUploadSchema>;
@@ -122,3 +126,4 @@ export type ReviewInput = z.infer<typeof reviewSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;
 export type ShoppingListAddInput = z.infer<typeof shoppingListAddSchema>;
 export type ShoppingListDeleteInput = z.infer<typeof shoppingListDeleteSchema>;
+export type PrivacyInput = z.infer<typeof privacySchema>;

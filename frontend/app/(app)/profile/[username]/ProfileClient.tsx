@@ -3,7 +3,7 @@
 import { useState } from "react";
 import RecipeCard from "@/components/common/RecipeCard";
 import FollowButton from "@/components/common/FollowButton";
-import { IconStar, IconStarFilled } from "@tabler/icons-react";
+import { IconStar, IconStarFilled, IconLock } from "@tabler/icons-react";
 import clsx from "clsx";
 
 interface ProfileUser {
@@ -13,6 +13,7 @@ interface ProfileUser {
   isSelf: boolean;
   isFollowing: boolean;
   viewerIsAuthed: boolean;
+  isPrivateView: boolean;
   profile: {
     bio: string | null;
     avatarUrl: string | null;
@@ -109,23 +110,36 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
           <p className="text-xs text-muted mt-1">
             Joined {new Date(user.createdAt).toLocaleDateString("en-CA", { year: "numeric", month: "long" })}
           </p>
-          <div className="flex gap-4 mt-2 text-sm text-muted">
-            <span>
-              <strong className="text-foreground">
-                {user.profile?.recipeCount ?? 0}
-              </strong>{" "}
-              recipes
-            </span>
-            <span>
-              <strong className="text-foreground">
-                {user.profile?.reviewCount ?? 0}
-              </strong>{" "}
-              reviews
-            </span>
-          </div>
+          {!user.isPrivateView && (
+            <div className="flex gap-4 mt-2 text-sm text-muted">
+              <span>
+                <strong className="text-foreground">
+                  {user.profile?.recipeCount ?? 0}
+                </strong>{" "}
+                recipes
+              </span>
+              <span>
+                <strong className="text-foreground">
+                  {user.profile?.reviewCount ?? 0}
+                </strong>{" "}
+                reviews
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
+      {user.isPrivateView ? (
+        <div className="border border-border rounded-lg py-10 px-4 text-center">
+          <IconLock size={28} className="mx-auto text-muted" aria-hidden />
+          <p className="mt-3 font-semibold">This profile is private</p>
+          <p className="mt-1 text-sm text-muted">
+            @{user.username} keeps their recipes, favourites, reviews and
+            comments visible to themselves only.
+          </p>
+        </div>
+      ) : (
+        <>
       {/* Tabs */}
       <div className="flex border-b border-border mb-4">
         {TABS.map(([key, label]) => (
@@ -261,6 +275,8 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
             ))
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   );
