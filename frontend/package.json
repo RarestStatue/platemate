@@ -6,11 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate --generator client",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:up": "docker compose -f ../docker-compose.yml up -d --wait && npx prisma migrate deploy"
+    "db:up": "docker compose -f ../docker-compose.yml up -d --wait && npx prisma migrate deploy",
+    "db:erd": "prisma generate --generator erd"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
