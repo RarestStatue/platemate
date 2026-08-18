@@ -2,6 +2,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Not run during install/deploy (postinstall is scoped to --generator client,
+// because this generator needs Chrome via puppeteer, which build images lack).
+// Regenerate manually after schema changes: npm run db:erd
 generator erd {
   provider = "prisma-erd-generator"
   output   = "./ERD.svg"
